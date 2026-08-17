@@ -266,7 +266,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       .finally(() => {
         setThemeReady(true);
         // Backend is now warm — kick off menu prefetch so homepage renders instantly
-        fetch("/api/menu/").catch(() => {});
+        fetch("/api/menu").catch(() => {});
       });
   }, []);
 
