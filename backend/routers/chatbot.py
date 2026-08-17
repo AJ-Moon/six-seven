@@ -216,7 +216,10 @@ def chat(
 
             is_open = str(settings.get("restaurant_open", "true")).lower() == "true"
             cash_on_delivery = str(settings.get("cash_on_delivery", "true")).lower() == "true"
-            payment_note = "Cash on Delivery" if cash_on_delivery else "Card (at door)"
+            payment_options = ["Card on Delivery", "Online Transfer"]
+            if cash_on_delivery:
+                payment_options.insert(0, "Cash on Delivery")
+            payment_note = ", ".join(payment_options)
 
             system_prompt = f"""You are {restaurant_name}'s friendly AI order assistant.
 

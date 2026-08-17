@@ -17,13 +17,15 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { toast } from "sonner";
 import { getCartId, getSessionId, getVisitorId, track } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
+import { getOrderingStatus, ORDER_HOURS_TEXT } from "@/lib/order-hours";
+import { PAYMENT_METHODS } from "@/lib/payment";
 
 interface Branch {
   id: number;
@@ -63,6 +65,9 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderingStatus, setOrderingStatus] = useState(() =>
+    getOrderingStatus(),
+  );
   const [customerLat, setCustomerLat] = useState<number | null>(null);
   const [customerLng, setCustomerLng] = useState<number | null>(null);
   const [deliveryStatus, setDeliveryStatus] = useState<"idle" | "checking" | "ok" | "outside">("idle");
@@ -78,6 +83,18 @@ export default function CheckoutPage() {
       properties: { itemCount: items.length, displayedTotal: total },
     })
   }, [items.length, total])
+
+  useEffect(() => {
+    const updateOrderingStatus = () => setOrderingStatus(getOrderingStatus());
+    const interval = window.setInterval(updateOrderingStatus, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!cashOnDelivery && paymentMethod === "cash") {
+      setPaymentMethod("card");
+    }
+  }, [cashOnDelivery, paymentMethod]);
 
   useEffect(() => {
     if (items.length === 0 && !submittedRef.current) {
@@ -168,6 +185,10 @@ export default function CheckoutPage() {
       toast.error("Please select a branch for pickup");
       return;
     }
+    if (!orderingStatus.open) {
+      toast.error(orderingStatus.message);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -254,6 +275,35 @@ export default function CheckoutPage() {
           <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-3">
             {/* Left — Details */}
             <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardContent className="pt-6 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <h2 className="font-semibold text-foreground">
+                        Ordering Hours
+                      </h2>
+                    </div>
+                    <Badge
+                      variant={orderingStatus.open ? "secondary" : "outline"}
+                      className={
+                        orderingStatus.open
+                          ? "bg-green-100 text-green-700"
+                          : "border-amber-300 text-amber-700"
+                      }
+                    >
+                      {orderingStatus.label}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {ORDER_HOURS_TEXT}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {orderingStatus.message}
+                  </p>
+                </CardContent>
+              </Card>
+
               {/* Guest / User Info */}
               {!user ? (
                 <Card>
@@ -436,10 +486,9 @@ export default function CheckoutPage() {
                     Payment Method
                   </h2>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {[
-                      ...(cashOnDelivery ? [{ value: "cash", label: "Cash on Delivery" }] : []),
-                      { value: "card", label: "Card (at door)" },
-                    ].map((pm) => (
+                    {PAYMENT_METHODS.filter(
+                      (pm) => cashOnDelivery || pm.value !== "cash",
+                    ).map((pm) => (
                       <button
                         key={pm.value}
                         type="button"
@@ -592,7 +641,7 @@ export default function CheckoutPage() {
                   type="submit"
                   className="w-full"
                   size="lg"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !orderingStatus.open}
                 >
                   {isSubmitting ? (
                     <>

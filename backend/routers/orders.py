@@ -2,6 +2,7 @@ import json
 import math
 from datetime import datetime, timedelta
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
@@ -24,6 +25,12 @@ from services.consent import ensure_customer_with_cursor
 from services.jobs import enqueue_job
 
 router = APIRouter()
+
+ORDER_TIMEZONE = ZoneInfo("Asia/Karachi")
+ORDER_HOURS_DETAIL = (
+    "Online ordering hours: Mon-Thu 12 PM-1:30 AM, Fri 2 PM-2:30 AM, "
+    "Sat 12 PM-2:30 AM, Sun 5 PM-1:30 AM."
+)
 
 
 class OrderItem(BaseModel):
@@ -68,8 +75,8 @@ class CreateOrderRequest(BaseModel):
     @field_validator("paymentMethod")
     @classmethod
     def validate_payment_method(cls, v: str) -> str:
-        if v not in {"cash", "card"}:
-            raise ValueError("paymentMethod must be cash or card")
+        if v not in {"cash", "card", "online_transfer"}:
+            raise ValueError("paymentMethod must be cash, card, or online_transfer")
         return v
 
 
@@ -119,6 +126,22 @@ def _safe_bool(value: str, default: bool) -> bool:
     if value is None:
         return default
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _orders_open_now(now: Optional[datetime] = None) -> bool:
+    local_now = (now or datetime.now(tz=ORDER_TIMEZONE)).astimezone(ORDER_TIMEZONE)
+    minutes = local_now.hour * 60 + local_now.minute
+    weekday = local_now.weekday()  # Monday=0, Sunday=6
+
+    early_cutoff = 150 if weekday in {5, 6} else 90
+    if minutes <= early_cutoff:
+        return True
+
+    opening_minute = {
+        4: 14 * 60,
+        6: 17 * 60,
+    }.get(weekday, 12 * 60)
+    return minutes >= opening_minute
 
 
 def _get_rewards_program_settings(cur, restaurant_id: int):
@@ -184,6 +207,8 @@ def create_order(
 
             if not _safe_bool(_get_setting(cur, "restaurant_open", restaurant_id, "true"), True):
                 raise HTTPException(status_code=409, detail="Restaurant is currently closed")
+            if not _orders_open_now():
+                raise HTTPException(status_code=409, detail=ORDER_HOURS_DETAIL)
 
             minimum_order_cents = load_money_setting_cents(cur, restaurant_id, "min_order_amount")
             if subtotal_cents < minimum_order_cents:

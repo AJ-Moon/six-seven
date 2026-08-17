@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/money";
+import { paymentMethodLabel } from "@/lib/payment";
 
 function adminFetch(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("admin_token");
@@ -361,7 +362,7 @@ export default function AdminCurrentOrders() {
                     {formatMoney(order.total)}
                   </p>
                   <p className="text-sm text-muted-foreground capitalize">
-                    {order.paymentMethod}
+                    {paymentMethodLabel(order.paymentMethod)}
                   </p>
                 </div>
               </div>

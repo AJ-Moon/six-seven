@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/money";
+import { paymentMethodLabel } from "@/lib/payment";
 
 function adminFetch(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("admin_token");
@@ -253,7 +254,7 @@ export default function AdminFinishedOrders() {
               <SelectItem value="all">All payments</SelectItem>
               <SelectItem value="cash">Cash</SelectItem>
               <SelectItem value="card">Card</SelectItem>
-              <SelectItem value="online">Online</SelectItem>
+              <SelectItem value="online_transfer">Online Transfer</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -343,7 +344,7 @@ export default function AdminFinishedOrders() {
                         {formatMoney(order.total)}
                       </td>
                       <td className="px-4 py-3 capitalize text-muted-foreground">
-                        {order.paymentMethod}
+                        {paymentMethodLabel(order.paymentMethod)}
                       </td>
                       <td className="px-4 py-3">
                         <span

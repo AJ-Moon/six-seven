@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useCart } from "@/contexts/CartContext"
 import { toast } from "sonner"
 import { formatMoney } from "@/lib/money";
+import { paymentMethodLabel } from "@/lib/payment";
 
 interface OrderItem {
   menuItemId: number
@@ -147,7 +148,7 @@ export default function HistoryPage() {
                       <div>
                         <p className="font-semibold text-foreground">Total: {formatMoney((order.total || 0))}</p>
                         <p className="text-xs text-muted-foreground capitalize">
-                          {order.paymentMethod === "cash" ? "Cash on delivery" : "Card payment"}
+                          {paymentMethodLabel(order.paymentMethod)}
                         </p>
                         {(order.pointsEarned || 0) > 0 && (
                           <p className="text-xs text-primary">+{order.pointsEarned} pts earned</p>

@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
-import { Instagram, Twitter, Youtube, Phone, Mail, MapPin } from "lucide-react";
+import { Instagram, Twitter, Youtube, Phone, Mail, MapPin, Clock } from "lucide-react";
 import { useRestaurant } from "@/contexts/RestaurantContext";
+import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
 
 const footerLinks = {
   company: [
@@ -146,6 +147,10 @@ export function Footer() {
                     {address}
                   </li>
                 )}
+                <li className="flex items-start gap-2 text-sm text-gray-500">
+                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {ORDER_HOURS_TEXT}
+                </li>
               </ul>
             </div>
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle2, ShoppingBag, MapPin, Clock, Star } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { formatMoney } from "@/lib/money";
+import { paymentMethodLabel } from "@/lib/payment";
 
 interface OrderItem {
   name: string
@@ -103,7 +104,7 @@ export default function OrderConfirmationPage() {
                   <ShoppingBag className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <div>
                     <p className="font-medium text-foreground capitalize">{order.orderType}</p>
-                    <p>{order.paymentMethod === "cash" ? "Cash on delivery" : "Card payment"}</p>
+                    <p>{paymentMethodLabel(order.paymentMethod)}</p>
                   </div>
                 </div>
                 {order.address && (

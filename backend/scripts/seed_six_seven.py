@@ -88,7 +88,7 @@ SETTINGS = {
     "phone": "0324-6756767",
     "email": "contact@sixseven.pk",
     "address": "75 CCA, DD Block, DHA Phase 4, Lahore",
-    "hours": "12:00 PM – 1:00 AM, every day",
+    "hours": "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
     "whatsapp": "923246756767",
     "instagram_url": "https://instagram.com/six7coffee",
     "facebook_url": "https://facebook.com/six7coffee",
@@ -110,7 +110,7 @@ SETTINGS = {
     "rewards_enabled": "true",
     # Keep this factual: there is no free-delivery threshold in the pricing code,
     # so the banner must not promise one. Delivery is a flat Rs. 150 inside 5 km.
-    "announcement": "Open 12 PM – 1 AM · Delivery across DHA",
+    "announcement": "Open late · Fri from 2 PM · Sun from 5 PM · Delivery across DHA",
     "announcement_active": "true",
     "maps_embed": "https://www.google.com/maps?q=31.4641372,74.3822137&z=16&output=embed",
     "cash_on_delivery": "true",
@@ -119,9 +119,9 @@ SETTINGS = {
     "menu_subtitle": "Specialty coffee, loaded snacks, frappes and desserts — made fresh to order.",
     "footer_tagline": "Great coffee. Comfort food. Refreshing drinks. Irresistible desserts. "
                       "Made with quality ingredients and served with warm hospitality.",
-    "closed_message": "We're closed right now. Browse the menu and we'll be back at 12 PM.",
+    "closed_message": "We're closed right now. Online ordering opens Friday at 2 PM, Sunday at 5 PM, and 12 PM on other days.",
     "contact_reply_time": "We usually reply within a few hours",
-    "contact_hours_note": "Open daily, 12 PM – 1 AM",
+    "contact_hours_note": "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
     "deals_section_title": "Combos & Deals",
     "deals_section_subtitle": "Get more for less — our combo pairs a burger or wrap with fries and a signature drink.",
     "featured_section_title": "Fan Favourites",
@@ -217,7 +217,8 @@ def main() -> None:
                 """INSERT INTO branches (restaurant_id, name, address, city, phone, hours, is_open, is_default, maps_url)
                    VALUES (%s,%s,%s,%s,%s,%s,TRUE,TRUE,%s)""",
                 (RID, "Six Seven — DHA Phase 4", "75 CCA, DD Block, DHA Phase 4",
-                 "Lahore", "0324-6756767", "12:00 PM – 1:00 AM",
+                 "Lahore", "0324-6756767",
+                 "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
                  "https://maps.google.com/?q=31.4641372,74.3822137"),
             )
 

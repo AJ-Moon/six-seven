@@ -10,6 +10,7 @@ import { MapPin, Clock, Phone, Navigation, Search, LocateFixed } from "lucide-re
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRestaurant } from "@/contexts/RestaurantContext";
+import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
 
 type Branch = {
   id: number;
@@ -181,7 +182,7 @@ export default function BranchesPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Clock className="h-4 w-4 shrink-0" />
-                                  <span>{branch.hours}</span>
+                                  <span>{ORDER_HOURS_TEXT}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Phone className="h-4 w-4 shrink-0" />
