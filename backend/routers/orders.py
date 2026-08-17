@@ -75,8 +75,8 @@ class CreateOrderRequest(BaseModel):
     @field_validator("paymentMethod")
     @classmethod
     def validate_payment_method(cls, v: str) -> str:
-        if v not in {"cash", "card", "online_transfer"}:
-            raise ValueError("paymentMethod must be cash, card, or online_transfer")
+        if v not in {"cash", "card", "online_transfer", "pay_on_pickup"}:
+            raise ValueError("paymentMethod must be cash, card, online_transfer, or pay_on_pickup")
         return v
 
 
@@ -253,11 +253,16 @@ def create_order(
                 delivery_charge_cents = load_money_setting_cents(cur, restaurant_id, "delivery_charge")
 
             # ── Server-side delivery radius guard ─────────────────────────────
-            if body.orderType == "delivery" and body.customerLat is not None and body.customerLng is not None:
+            if body.orderType == "delivery":
                 lat_str = _get_setting(cur, "restaurant_lat", restaurant_id, "").strip()
                 lng_str = _get_setting(cur, "restaurant_lng", restaurant_id, "").strip()
                 radius_str = _get_setting(cur, "delivery_radius_km", restaurant_id, "").strip()
                 if lat_str and lng_str:
+                    if body.customerLat is None or body.customerLng is None:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Please select a delivery address from the map search or use your current location."
+                        )
                     try:
                         rest_lat = float(lat_str)
                         rest_lng = float(lng_str)

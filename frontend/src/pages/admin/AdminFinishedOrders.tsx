@@ -255,6 +255,7 @@ export default function AdminFinishedOrders() {
               <SelectItem value="cash">Cash</SelectItem>
               <SelectItem value="card">Card</SelectItem>
               <SelectItem value="online_transfer">Online Transfer</SelectItem>
+              <SelectItem value="pay_on_pickup">Pay on Pickup</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -87,5 +87,6 @@ def check_delivery(
     return {
         "withinRadius": within,
         "distanceKm": round(distance, 2),
+        "radiusKm": radius_km,
         "configured": True,
     }

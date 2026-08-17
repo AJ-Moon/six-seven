@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock, MapPin } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
@@ -39,6 +39,11 @@ interface RewardSettings {
   minRedeem: number;
   conversionRate: number;
 }
+
+const STORE_LAT = 31.4641372;
+const STORE_LNG = 74.3822137;
+const STORE_ADDRESS = "Six Seven, 75 CCA, DD Block, DHA Phase 4, Lahore";
+const DELIVERY_RADIUS_KM = 5;
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -71,6 +76,9 @@ export default function CheckoutPage() {
   const [customerLat, setCustomerLat] = useState<number | null>(null);
   const [customerLng, setCustomerLng] = useState<number | null>(null);
   const [deliveryStatus, setDeliveryStatus] = useState<"idle" | "checking" | "ok" | "outside">("idle");
+  const [deliveryDistanceKm, setDeliveryDistanceKm] = useState<number | null>(null);
+  const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(DELIVERY_RADIUS_KM);
+  const [isLocating, setIsLocating] = useState(false);
   // Prevent the empty-cart redirect from firing after a successful order submission
   const submittedRef = useRef(false);
   const checkoutTrackedRef = useRef(false);
@@ -113,12 +121,17 @@ export default function CheckoutPage() {
         })
           .then((r) => r.json())
           .then((data) => {
+             if (typeof data.distanceKm === "number") {
+                setDeliveryDistanceKm(data.distanceKm);
+             }
+             if (typeof data.radiusKm === "number") {
+                setDeliveryRadiusKm(data.radiusKm);
+             }
              if (data.configured === false || data.withinRadius) {
                 setDeliveryStatus("ok");
              } else {
                 setDeliveryStatus("outside");
-                setOrderType("pickup");
-                toast.error("Outside delivery zone — pickup only");
+                toast.error(`Outside delivery zone — delivery is only available within ${data.radiusKm || DELIVERY_RADIUS_KM} km`);
              }
           })
           .catch(() => setDeliveryStatus("idle"));
@@ -126,6 +139,7 @@ export default function CheckoutPage() {
       return () => clearTimeout(timer);
     } else {
       setDeliveryStatus("idle");
+      setDeliveryDistanceKm(null);
     }
   }, [customerLat, customerLng, orderType]);
 
@@ -164,6 +178,45 @@ export default function CheckoutPage() {
       : 0;
 
   const finalTotal = Math.max(0, total + effectiveDelivery - pointsDiscount);
+  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+  const deliveryMapSrc =
+    customerLat !== null && customerLng !== null
+      ? `https://www.google.com/maps?output=embed&saddr=${STORE_LAT},${STORE_LNG}&daddr=${customerLat},${customerLng}`
+      : `https://www.google.com/maps?q=${STORE_LAT},${STORE_LNG}&z=15&output=embed`;
+  const deliveryDirectionsUrl =
+    customerLat !== null && customerLng !== null
+      ? `https://www.google.com/maps/dir/?api=1&origin=${STORE_LAT},${STORE_LNG}&destination=${customerLat},${customerLng}`
+      : `https://www.google.com/maps/search/?api=1&query=${STORE_LAT},${STORE_LNG}`;
+  const deliveryAddressNeedsLocation =
+    orderType === "delivery" && address.trim() && (customerLat === null || customerLng === null);
+  const deliveryHasLocation = customerLat !== null && customerLng !== null;
+  const deliveryBlocked =
+    orderType === "delivery" &&
+    (deliveryStatus === "outside" ||
+      deliveryStatus === "checking" ||
+      deliveryAddressNeedsLocation ||
+      (deliveryHasLocation && deliveryStatus !== "ok"));
+
+  const useCurrentLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Location services are not available in this browser.");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCustomerLat(pos.coords.latitude);
+        setCustomerLng(pos.coords.longitude);
+        setAddress((current) => current || "Current location");
+        setIsLocating(false);
+      },
+      () => {
+        setIsLocating(false);
+        toast.error("Could not access your location. Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,6 +232,18 @@ export default function CheckoutPage() {
     }
     if (orderType === "delivery" && !address.trim()) {
       toast.error("Please enter your delivery address");
+      return;
+    }
+    if (deliveryAddressNeedsLocation) {
+      toast.error("Please select an address from search or use your current location so we can check delivery range.");
+      return;
+    }
+    if (orderType === "delivery" && deliveryStatus === "outside") {
+      toast.error(`This address is outside our ${deliveryRadiusKm} km delivery radius.`);
+      return;
+    }
+    if (orderType === "delivery" && deliveryHasLocation && deliveryStatus !== "ok") {
+      toast.error("Please wait for the delivery range check to finish.");
       return;
     }
     if (orderType === "pickup" && !branchId) {
@@ -200,7 +265,7 @@ export default function CheckoutPage() {
           price: i.price,
         })),
         orderType,
-        paymentMethod,
+        paymentMethod: orderType === "pickup" ? "pay_on_pickup" : paymentMethod,
         address,
         branchId,
         notes: notes.trim(),
@@ -397,24 +462,94 @@ export default function CheckoutPage() {
                   </div>
 
                   {orderType === "delivery" && (
-                    <div className="space-y-1.5">
+                    <div className="space-y-3">
                       <Label htmlFor="address">Delivery Address *</Label>
                       <div className="relative z-50">
-                        <SearchBox
-                          accessToken={import.meta.env.VITE_MAPBOX_TOKEN || ""}
-                          options={{ language: "en" }}
-                          value={address}
-                          onChange={(value) => setAddress(value)}
-                          onRetrieve={(res) => {
-                            const feature = res.features[0];
-                            if (feature) {
-                              setCustomerLng(feature.geometry.coordinates[0]);
-                              setCustomerLat(feature.geometry.coordinates[1]);
-                              setAddress(feature.properties.full_address || feature.properties.name || "");
-                            }
-                          }}
+                        {mapboxToken ? (
+                          <SearchBox
+                            accessToken={mapboxToken}
+                            options={{
+                              language: "en",
+                              proximity: {
+                                lng: STORE_LNG,
+                                lat: STORE_LAT,
+                              },
+                            }}
+                            value={address}
+                            onChange={(value) => {
+                              setAddress(value);
+                              setCustomerLat(null);
+                              setCustomerLng(null);
+                              setDeliveryDistanceKm(null);
+                              setDeliveryStatus("idle");
+                            }}
+                            onRetrieve={(res) => {
+                              const feature = res.features[0];
+                              if (feature) {
+                                setCustomerLng(feature.geometry.coordinates[0]);
+                                setCustomerLat(feature.geometry.coordinates[1]);
+                                setAddress(feature.properties.full_address || feature.properties.name || "");
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Input
+                            id="address"
+                            placeholder="Enter your delivery address"
+                            value={address}
+                            onChange={(e) => {
+                              setAddress(e.target.value);
+                              setCustomerLat(null);
+                              setCustomerLng(null);
+                              setDeliveryDistanceKm(null);
+                              setDeliveryStatus("idle");
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div className="overflow-hidden rounded-xl border bg-muted">
+                        <iframe
+                          title="Delivery route from Six Seven"
+                          src={deliveryMapSrc}
+                          className="h-64 w-full border-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          allowFullScreen
                         />
                       </div>
+                      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                          <span>
+                            Delivery starts from {STORE_ADDRESS}. Radius: {deliveryRadiusKm} km.
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={useCurrentLocation}
+                          disabled={isLocating}
+                          className="shrink-0"
+                        >
+                          {isLocating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Locating
+                            </>
+                          ) : (
+                            "Use my location"
+                          )}
+                        </Button>
+                      </div>
+                      <a
+                        href={deliveryDirectionsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex text-xs font-medium text-primary hover:underline"
+                      >
+                        View route from store in Google Maps
+                      </a>
                       {deliveryStatus === "checking" && (
                         <div className="flex items-center text-sm text-muted-foreground mt-1">
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -423,13 +558,21 @@ export default function CheckoutPage() {
                       )}
                       {deliveryStatus === "ok" && (
                         <div className="flex items-center text-sm text-green-600 mt-1 font-medium">
-                          ✅ We deliver to your area
+                          We deliver to your area
+                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km from store)` : ""}
                         </div>
                       )}
                       {deliveryStatus === "outside" && (
                         <div className="flex items-center text-sm text-red-600 mt-1 font-medium">
-                          ❌ Outside delivery zone — pickup only
+                          Outside delivery zone
+                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km from store)` : ""}.
+                          Delivery is available within {deliveryRadiusKm} km only.
                         </div>
+                      )}
+                      {deliveryAddressNeedsLocation && (
+                        <p className="text-xs font-medium text-amber-600">
+                          Select an address from search or use your current location to continue delivery.
+                        </p>
                       )}
                     </div>
                   )}
@@ -479,32 +622,35 @@ export default function CheckoutPage() {
                 </CardContent>
               </Card>
 
-              {/* Payment */}
-              <Card>
-                <CardContent className="pt-6 space-y-4">
-                  <h2 className="font-semibold text-foreground">
-                    Payment Method
-                  </h2>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {PAYMENT_METHODS.filter(
-                      (pm) => cashOnDelivery || pm.value !== "cash",
-                    ).map((pm) => (
-                      <button
-                        key={pm.value}
-                        type="button"
-                        onClick={() => setPaymentMethod(pm.value)}
-                        className={`rounded-lg border p-3 text-left text-sm font-medium transition-colors ${
-                          paymentMethod === pm.value
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-border bg-card text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        {pm.label}
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {orderType === "delivery" && (
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <h2 className="font-semibold text-foreground">
+                      Payment Method
+                    </h2>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {PAYMENT_METHODS.filter(
+                        (pm) =>
+                          pm.value !== "pay_on_pickup" &&
+                          (cashOnDelivery || pm.value !== "cash"),
+                      ).map((pm) => (
+                        <button
+                          key={pm.value}
+                          type="button"
+                          onClick={() => setPaymentMethod(pm.value)}
+                          className={`rounded-lg border p-3 text-left text-sm font-medium transition-colors ${
+                            paymentMethod === pm.value
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          {pm.label}
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Points Redemption */}
               {user &&
@@ -641,7 +787,7 @@ export default function CheckoutPage() {
                   type="submit"
                   className="w-full"
                   size="lg"
-                  disabled={isSubmitting || !orderingStatus.open}
+                  disabled={isSubmitting || !orderingStatus.open || deliveryBlocked}
                 >
                   {isSubmitting ? (
                     <>

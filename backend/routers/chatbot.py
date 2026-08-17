@@ -361,10 +361,10 @@ OR when customer says YES to the order summary:
                                             "guest_phone": {"type": ["string", "null"]},
                                             "order_type": {"type": "string", "enum": ["delivery", "pickup"]},
                                             "address": {"type": ["string", "null"]},
-                                            "payment_method": {"type": "string"},
+                                            "payment_method": {"type": "string", "enum": ["cash", "card", "online_transfer", "pay_on_pickup"]},
                                             "notes": {"type": ["string", "null"]}
                                         },
-                                        "required": ["type", "items", "order_type", "payment_method"]
+                                        "required": ["type", "items", "order_type"]
                                     }
                                 },
                                 "required": ["reply", "cart", "stage"]
@@ -439,9 +439,9 @@ OR when customer says YES to the order summary:
                             ai_stage = "collecting_details"
                             ai_action = None
                         else:
-                            payment_method = act.get("payment_method", "cash")
-                            if payment_method not in {"cash", "card"}:
-                                raise ValueError("Please choose cash or card before placing the order.")
+                            payment_method = "pay_on_pickup" if order_type == "pickup" else act.get("payment_method", "cash")
+                            if payment_method not in {"cash", "card", "online_transfer", "pay_on_pickup"}:
+                                raise ValueError("Please choose cash, card, or online transfer before placing the order.")
 
                             priced_lines = price_menu_lines(
                                 cur,
