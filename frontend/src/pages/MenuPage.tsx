@@ -92,6 +92,10 @@ export default function MenuPage() {
   if (debouncedSearch) params.set("search", debouncedSearch);
   if (sortBy !== "popular") params.set("sort", sortBy);
 
+  const menuPath = params.toString()
+    ? `/api/menu?${params.toString()}`
+    : "/api/menu";
+
   const {
     data: allItems = [],
     isLoading: itemsLoading,
@@ -101,7 +105,7 @@ export default function MenuPage() {
   } = useQuery({
     queryKey: ["menu", activeCategory, debouncedSearch, sortBy],
     queryFn: () =>
-      fetchJsonWithRetry<MenuItem[]>(`/api/menu/?${params}`, undefined, {
+      fetchJsonWithRetry<MenuItem[]>(menuPath, undefined, {
         timeoutMs: 15000,
         retries: 1,
       }),
@@ -119,26 +123,26 @@ export default function MenuPage() {
     : 100;
 
   useEffect(() => {
-    track("menu_viewed")
-  }, [])
+    track("menu_viewed");
+  }, []);
 
   useEffect(() => {
-    if (itemsLoading || itemsFetching || itemsError) return
-    const key = `${activeCategory}|${debouncedSearch}|${sortBy}|${allItems.map((item) => item.id).join(",")}`
-    if (lastTrackedResultKey.current === key) return
-    lastTrackedResultKey.current = key
+    if (itemsLoading || itemsFetching || itemsError) return;
+    const key = `${activeCategory}|${debouncedSearch}|${sortBy}|${allItems.map((item) => item.id).join(",")}`;
+    if (lastTrackedResultKey.current === key) return;
+    lastTrackedResultKey.current = key;
     if (activeCategory !== "all") {
-      track("category_viewed", { categoryId: activeCategory })
+      track("category_viewed", { categoryId: activeCategory });
     }
     if (debouncedSearch) {
       track("search_performed", {
         properties: { query: debouncedSearch, resultCount: allItems.length },
-      })
+      });
     }
     for (const item of allItems.slice(0, 50)) {
-      track("item_impression", { itemId: item.id, categoryId: item.category })
+      track("item_impression", { itemId: item.id, categoryId: item.category });
     }
-  }, [activeCategory, allItems, debouncedSearch, itemsError, itemsFetching, itemsLoading, sortBy])
+  }, [activeCategory, allItems, debouncedSearch, itemsError, itemsFetching, itemsLoading, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -232,8 +236,8 @@ export default function MenuPage() {
                     className="w-full"
                   />
                   <div className="mt-2 flex justify-between text-sm text-muted-foreground">
-                    <span>${priceRange[0]}</span>
-                    <span>{priceRange[1] >= maxPrice ? "Any" : `$${priceRange[1]}`}</span>
+                    <span>{formatMoney(priceRange[0])}</span>
+                    <span>{priceRange[1] >= maxPrice ? "Any" : formatMoney(priceRange[1])}</span>
                   </div>
                 </div>
               </div>
@@ -306,7 +310,7 @@ export default function MenuPage() {
                   onClick={() => {
                     setActiveCategory("all");
                     setSearchQuery("");
-                    setPriceRange([0, 20]);
+                    setPriceRange([0, 9999]);
                   }}
                 >
                   Clear all filters
@@ -384,7 +388,8 @@ export default function MenuPage() {
                               onClick: () => navigate("/cart"),
                             },
                           });
-                        }}>
+                        }}
+                      >
                         <Plus className="h-5 w-5" />
                         <span className="sr-only">Add to cart</span>
                       </Button>
