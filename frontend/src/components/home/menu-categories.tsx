@@ -35,7 +35,7 @@ export function MenuCategories() {
   } = useQuery({
     queryKey: ["menu-all"],
     queryFn: () =>
-      fetchJsonWithRetry<MenuItem[]>("/api/menu/", undefined, {
+      fetchJsonWithRetry<MenuItem[]>("/api/menu", undefined, {
         timeoutMs: 15000,
         retries: 1,
       }),
