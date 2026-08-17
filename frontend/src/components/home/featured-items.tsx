@@ -19,7 +19,6 @@ type MenuItem = {
   price: number;
   salePrice?: number | null;
   image: string;
-  rating: number;
   isSpicy: boolean;
   isPopular: boolean;
   isFeatured?: boolean;
@@ -48,9 +47,7 @@ export function FeaturedItems() {
 
   const featuredItems = useMemo(() => {
     const explicit = items.filter((item) => item.isFeatured);
-    const fallback = items.filter(
-      (item) => item.isPopular || item.rating >= 4.5,
-    );
+    const fallback = items.filter((item) => item.isPopular);
     return (explicit.length ? explicit : fallback).slice(0, 4);
   }, [items]);
 
@@ -208,17 +205,6 @@ export function FeaturedItems() {
 
               {/* Content */}
               <div className="p-4">
-                {/* Rating */}
-                <div className="mb-2 flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-secondary text-secondary" />
-                  <span className="text-sm font-medium text-foreground">
-                    {item.rating}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    ({Math.round(item.rating * 20)})
-                  </span>
-                </div>
-
                 <h3 className="font-serif text-lg font-semibold text-card-foreground line-clamp-1">
                   {item.name}
                 </h3>

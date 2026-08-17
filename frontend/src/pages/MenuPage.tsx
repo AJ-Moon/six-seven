@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import {
   Plus,
-  Star,
   Flame,
   Search,
   SlidersHorizontal,
@@ -47,7 +46,6 @@ type MenuItem = {
   price: number;
   salePrice?: number | null;
   image: string;
-  rating: number;
   isSpicy: boolean;
   isPopular: boolean;
   isFeatured?: boolean;
@@ -184,7 +182,6 @@ export default function MenuPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="popular">Popular</SelectItem>
-                  <SelectItem value="rating">Top Rated</SelectItem>
                   <SelectItem value="price-low">Price: Low</SelectItem>
                   <SelectItem value="price-high">Price: High</SelectItem>
                 </SelectContent>
@@ -395,12 +392,6 @@ export default function MenuPage() {
                       </Button>
                     </div>
                     <div className="p-3 sm:p-4">
-                      <div className="mb-1.5 flex items-center gap-1">
-                        <Star className="h-3.5 w-3.5 fill-secondary text-secondary sm:h-4 sm:w-4" />
-                        <span className="text-xs font-medium sm:text-sm">
-                          {item.rating}
-                        </span>
-                      </div>
                       <h3 className="font-serif text-base font-semibold text-card-foreground line-clamp-2 sm:text-lg sm:line-clamp-1">
                         {item.name}
                       </h3>

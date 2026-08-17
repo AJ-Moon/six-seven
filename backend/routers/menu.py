@@ -7,6 +7,29 @@ from dependencies.auth import get_restaurant_id
 
 router = APIRouter()
 
+CATEGORY_ORDER = [
+    "Food & Snacks",
+    "Combo Meal",
+    "Signature Drinks",
+    "Iced Teas",
+    "Smoothies",
+    "Frappes",
+    "Iced Coffees",
+    "Hot Coffees",
+    "Coffee",
+    "Desserts",
+    "Add Ons",
+]
+
+
+def _category_order_sql(column: str = "category") -> str:
+    clauses = []
+    for index, category in enumerate(CATEGORY_ORDER):
+        escaped = category.replace("'", "''")
+        clauses.append(f"WHEN {column} = '{escaped}' THEN {index}")
+    clauses_sql = " ".join(clauses)
+    return f"CASE {clauses_sql} ELSE {len(CATEGORY_ORDER)} END"
+
 
 def _row_to_item(r):
     return {
@@ -22,7 +45,9 @@ def get_categories(response: Response, restaurant_id: int = Depends(get_restaura
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT DISTINCT category FROM menu_items WHERE restaurant_id = %s AND is_available = TRUE ORDER BY category",
+                "SELECT DISTINCT category FROM menu_items "
+                "WHERE restaurant_id = %s AND is_available = TRUE "
+                f"ORDER BY {_category_order_sql()}, category",
                 (restaurant_id,),
             )
             rows = cur.fetchall()
@@ -57,7 +82,7 @@ def get_menu(
     elif sort == "rating":
         query += " ORDER BY rating DESC"
     else:
-        query += " ORDER BY display_order ASC NULLS LAST, is_popular DESC"
+        query += f" ORDER BY {_category_order_sql()}, display_order ASC NULLS LAST, is_popular DESC"
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(query, params)
@@ -79,4 +104,3 @@ def get_menu_item(item_id: int, restaurant_id: int = Depends(get_restaurant_id))
     if not row:
         raise HTTPException(status_code=404, detail="Item not found")
     return _row_to_item(row)
-
