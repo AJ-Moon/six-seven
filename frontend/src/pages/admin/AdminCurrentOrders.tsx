@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   RefreshCw,
   Phone,
@@ -6,6 +6,9 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  BellRing,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -56,6 +59,10 @@ interface Order {
 
 const STATUS_STAGES = ["received", "preparing", "ready", "delivered"] as const;
 type StageStatus = (typeof STATUS_STAGES)[number];
+type BrowserWindowWithAudio = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
 
 const STAGE_LABELS: Record<StageStatus, string> = {
   received: "Received",
@@ -120,11 +127,18 @@ export default function AdminCurrentOrders() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("admin_order_sound") !== "off";
+  });
+  const [soundReady, setSoundReady] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<
     "connecting" | "live" | "off"
   >("connecting");
   // Keep a stable ref so the realtime callback can always call the latest fetchOrders
   const fetchOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const alertIntervalRef = useRef<number | null>(null);
 
   const fetchOrders = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -137,6 +151,65 @@ export default function AdminCurrentOrders() {
   };
 
   fetchOrdersRef.current = () => fetchOrders(false);
+
+  const getAudioContext = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as BrowserWindowWithAudio).webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass();
+    }
+    return audioContextRef.current;
+  }, []);
+
+  const playOrderAlertTone = useCallback(async () => {
+    const ctx = getAudioContext();
+    if (!ctx) return false;
+
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+    gain.connect(ctx.destination);
+
+    [0, 0.22].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, now + offset);
+      osc.frequency.exponentialRampToValueAtTime(660, now + offset + 0.16);
+      osc.connect(gain);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.18);
+    });
+
+    window.setTimeout(() => gain.disconnect(), 700);
+    setSoundReady(true);
+    return true;
+  }, [getAudioContext]);
+
+  const enableSound = async () => {
+    setSoundEnabled(true);
+    localStorage.setItem("admin_order_sound", "on");
+    const played = await playOrderAlertTone().catch(() => false);
+    if (!played) setSoundReady(false);
+  };
+
+  const disableSound = () => {
+    setSoundEnabled(false);
+    setSoundReady(false);
+    localStorage.setItem("admin_order_sound", "off");
+    if (alertIntervalRef.current !== null) {
+      window.clearInterval(alertIntervalRef.current);
+      alertIntervalRef.current = null;
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -176,6 +249,51 @@ export default function AdminCurrentOrders() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!soundEnabled) return;
+
+    const unlock = () => {
+      void getAudioContext()
+        ?.resume()
+        .then(() => setSoundReady(true))
+        .catch(() => setSoundReady(false));
+    };
+
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, [getAudioContext, soundEnabled]);
+
+  useEffect(() => {
+    const hasUnpreparedOrder = orders.some(
+      (order) => normalizeStageStatus(order.status) === "received",
+    );
+
+    if (!soundEnabled || !hasUnpreparedOrder) {
+      if (alertIntervalRef.current !== null) {
+        window.clearInterval(alertIntervalRef.current);
+        alertIntervalRef.current = null;
+      }
+      return;
+    }
+
+    void playOrderAlertTone().catch(() => setSoundReady(false));
+    alertIntervalRef.current = window.setInterval(() => {
+      void playOrderAlertTone().catch(() => setSoundReady(false));
+    }, 5000);
+
+    return () => {
+      if (alertIntervalRef.current !== null) {
+        window.clearInterval(alertIntervalRef.current);
+        alertIntervalRef.current = null;
+      }
+    };
+  }, [orders, playOrderAlertTone, soundEnabled]);
+
   const updateStatus = async (orderId: string, status: string) => {
     setUpdatingId(orderId);
     try {
@@ -212,20 +330,38 @@ export default function AdminCurrentOrders() {
                     : realtimeStatus === "connecting"
                       ? "connecting…"
                       : "realtime off — refresh manually"
-                }`}
+              }`}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fetchOrders()}
-          disabled={loading}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
-          />{" "}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={soundEnabled ? "secondary" : "outline"}
+            size="sm"
+            onClick={soundEnabled ? disableSound : enableSound}
+          >
+            {soundEnabled ? (
+              soundReady ? (
+                <Volume2 className="mr-2 h-4 w-4" />
+              ) : (
+                <BellRing className="mr-2 h-4 w-4" />
+              )
+            ) : (
+              <VolumeX className="mr-2 h-4 w-4" />
+            )}
+            {soundEnabled ? (soundReady ? "Sound on" : "Enable sound") : "Sound off"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchOrders()}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+            />{" "}
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {loading && (
