@@ -63,6 +63,11 @@ type BrowserWindowWithAudio = Window &
   typeof globalThis & {
     webkitAudioContext?: typeof AudioContext;
   };
+type ActiveOrderAlarm = {
+  gain: GainNode;
+  oscillators: OscillatorNode[];
+  sweepTimer: number;
+};
 
 const STAGE_LABELS: Record<StageStatus, string> = {
   received: "Received",
@@ -138,7 +143,7 @@ export default function AdminCurrentOrders() {
   // Keep a stable ref so the realtime callback can always call the latest fetchOrders
   const fetchOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const audioContextRef = useRef<AudioContext | null>(null);
-  const alertIntervalRef = useRef<number | null>(null);
+  const alarmRef = useRef<ActiveOrderAlarm | null>(null);
 
   const fetchOrders = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -164,51 +169,111 @@ export default function AdminCurrentOrders() {
     return audioContextRef.current;
   }, []);
 
-  const playOrderAlertTone = useCallback(async () => {
+  const stopOrderAlarm = useCallback(() => {
+    const alarm = alarmRef.current;
+    if (!alarm) return;
+
+    window.clearInterval(alarm.sweepTimer);
+    alarm.oscillators.forEach((osc) => {
+      try {
+        osc.stop();
+      } catch {
+        // Already stopped.
+      }
+      osc.disconnect();
+    });
+    alarm.gain.disconnect();
+    alarmRef.current = null;
+  }, []);
+
+  const startOrderAlarm = useCallback(async () => {
     const ctx = getAudioContext();
     if (!ctx) return false;
 
     if (ctx.state === "suspended") {
       await ctx.resume();
     }
+    if (alarmRef.current) {
+      setSoundReady(true);
+      return true;
+    }
 
     const now = ctx.currentTime;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+    gain.gain.setValueAtTime(0.34, now);
     gain.connect(ctx.destination);
 
-    [0, 0.22].forEach((offset) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, now + offset);
-      osc.frequency.exponentialRampToValueAtTime(660, now + offset + 0.16);
-      osc.connect(gain);
-      osc.start(now + offset);
-      osc.stop(now + offset + 0.18);
+    const mainOsc = ctx.createOscillator();
+    mainOsc.type = "square";
+    mainOsc.frequency.setValueAtTime(760, now);
+    mainOsc.connect(gain);
+
+    const overtoneOsc = ctx.createOscillator();
+    overtoneOsc.type = "triangle";
+    overtoneOsc.frequency.setValueAtTime(1140, now);
+    overtoneOsc.connect(gain);
+
+    const sweep = (high: boolean) => {
+      const sweepStart = ctx.currentTime;
+      mainOsc.frequency.cancelScheduledValues(sweepStart);
+      overtoneOsc.frequency.cancelScheduledValues(sweepStart);
+      mainOsc.frequency.setValueAtTime(mainOsc.frequency.value, sweepStart);
+      overtoneOsc.frequency.setValueAtTime(overtoneOsc.frequency.value, sweepStart);
+      mainOsc.frequency.exponentialRampToValueAtTime(high ? 980 : 760, sweepStart + 0.32);
+      overtoneOsc.frequency.exponentialRampToValueAtTime(high ? 1470 : 1140, sweepStart + 0.32);
+      gain.gain.cancelScheduledValues(sweepStart);
+      gain.gain.setValueAtTime(gain.gain.value, sweepStart);
+      gain.gain.linearRampToValueAtTime(high ? 0.42 : 0.3, sweepStart + 0.16);
+    };
+
+    mainOsc.start(now);
+    overtoneOsc.start(now);
+    let high = false;
+    sweep(high);
+    const sweepTimer = window.setInterval(() => {
+      high = !high;
+      sweep(high);
+    }, 650);
+
+    alarmRef.current = {
+      gain,
+      oscillators: [mainOsc, overtoneOsc],
+      sweepTimer,
+    };
+
+    mainOsc.addEventListener("ended", () => {
+      if (alarmRef.current?.oscillators.includes(mainOsc)) {
+        alarmRef.current = null;
+      }
     });
 
-    window.setTimeout(() => gain.disconnect(), 700);
     setSoundReady(true);
     return true;
   }, [getAudioContext]);
 
+  const hasUnpreparedOrder = orders.some(
+    (order) => normalizeStageStatus(order.status) === "received",
+  );
+
   const enableSound = async () => {
     setSoundEnabled(true);
     localStorage.setItem("admin_order_sound", "on");
-    const played = await playOrderAlertTone().catch(() => false);
-    if (!played) setSoundReady(false);
+    const ctx = getAudioContext();
+    const ready = await ctx
+      ?.resume()
+      .then(() => true)
+      .catch(() => false);
+    setSoundReady(Boolean(ready));
+    if (ready && hasUnpreparedOrder) {
+      void startOrderAlarm().catch(() => setSoundReady(false));
+    }
   };
 
   const disableSound = () => {
     setSoundEnabled(false);
     setSoundReady(false);
     localStorage.setItem("admin_order_sound", "off");
-    if (alertIntervalRef.current !== null) {
-      window.clearInterval(alertIntervalRef.current);
-      alertIntervalRef.current = null;
-    }
+    stopOrderAlarm();
   };
 
   useEffect(() => {
@@ -246,8 +311,9 @@ export default function AdminCurrentOrders() {
     return () => {
       window.clearInterval(poll);
       if (channel) supabase?.removeChannel(channel);
+      stopOrderAlarm();
     };
-  }, []);
+  }, [stopOrderAlarm]);
 
   useEffect(() => {
     if (!soundEnabled) return;
@@ -269,30 +335,17 @@ export default function AdminCurrentOrders() {
   }, [getAudioContext, soundEnabled]);
 
   useEffect(() => {
-    const hasUnpreparedOrder = orders.some(
-      (order) => normalizeStageStatus(order.status) === "received",
-    );
-
     if (!soundEnabled || !hasUnpreparedOrder) {
-      if (alertIntervalRef.current !== null) {
-        window.clearInterval(alertIntervalRef.current);
-        alertIntervalRef.current = null;
-      }
+      stopOrderAlarm();
       return;
     }
 
-    void playOrderAlertTone().catch(() => setSoundReady(false));
-    alertIntervalRef.current = window.setInterval(() => {
-      void playOrderAlertTone().catch(() => setSoundReady(false));
-    }, 5000);
+    void startOrderAlarm().catch(() => setSoundReady(false));
 
     return () => {
-      if (alertIntervalRef.current !== null) {
-        window.clearInterval(alertIntervalRef.current);
-        alertIntervalRef.current = null;
-      }
+      stopOrderAlarm();
     };
-  }, [orders, playOrderAlertTone, soundEnabled]);
+  }, [hasUnpreparedOrder, soundEnabled, startOrderAlarm, stopOrderAlarm]);
 
   const updateStatus = async (orderId: string, status: string) => {
     setUpdatingId(orderId);
@@ -337,7 +390,7 @@ export default function AdminCurrentOrders() {
           <Button
             variant={soundEnabled ? "secondary" : "outline"}
             size="sm"
-            onClick={soundEnabled ? disableSound : enableSound}
+            onClick={soundEnabled && soundReady ? disableSound : enableSound}
           >
             {soundEnabled ? (
               soundReady ? (
@@ -348,7 +401,13 @@ export default function AdminCurrentOrders() {
             ) : (
               <VolumeX className="mr-2 h-4 w-4" />
             )}
-            {soundEnabled ? (soundReady ? "Sound on" : "Enable sound") : "Sound off"}
+            {soundEnabled
+              ? soundReady
+                ? hasUnpreparedOrder
+                  ? "Alarm on"
+                  : "Sound on"
+                : "Enable sound"
+              : "Sound off"}
           </Button>
           <Button
             variant="outline"
