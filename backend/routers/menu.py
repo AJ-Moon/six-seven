@@ -45,8 +45,9 @@ def get_categories(response: Response, restaurant_id: int = Depends(get_restaura
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT DISTINCT category FROM menu_items "
+                "SELECT category FROM menu_items "
                 "WHERE restaurant_id = %s AND is_available = TRUE "
+                "GROUP BY category "
                 f"ORDER BY {_category_order_sql()}, category",
                 (restaurant_id,),
             )
