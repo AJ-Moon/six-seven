@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { SearchBox } from "@mapbox/search-js-react";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -45,6 +44,77 @@ const STORE_LNG = 74.3822137;
 const STORE_ADDRESS = "Six Seven, 75 CCA, DD Block, DHA Phase 4, Lahore";
 const DELIVERY_RADIUS_KM = 5;
 
+type DeliveryArea = {
+  name: string;
+  lat: number;
+  lng: number;
+};
+
+const LAHORE_DELIVERY_AREAS: DeliveryArea[] = [
+  { name: "Aabpara Housing Society", lat: 31.4189, lng: 74.2552 },
+  { name: "Abbot Road", lat: 31.5676, lng: 74.3256 },
+  { name: "Allama Iqbal Town", lat: 31.5133, lng: 74.2817 },
+  { name: "Askari 10", lat: 31.4838, lng: 74.4055 },
+  { name: "Askari 11", lat: 31.4663, lng: 74.4312 },
+  { name: "Askari 5", lat: 31.5249, lng: 74.3945 },
+  { name: "Azam Gardens", lat: 31.4908, lng: 74.3295 },
+  { name: "Bahria Town", lat: 31.3745, lng: 74.1841 },
+  { name: "Bankers Town", lat: 31.4179, lng: 74.2441 },
+  { name: "Bedian Road", lat: 31.4646, lng: 74.4351 },
+  { name: "Canal Bank", lat: 31.4964, lng: 74.2468 },
+  { name: "Cantt", lat: 31.5161, lng: 74.3851 },
+  { name: "Cavalry Ground", lat: 31.5019, lng: 74.3677 },
+  { name: "Chuburji", lat: 31.5481, lng: 74.3018 },
+  { name: "DHA Phase 1", lat: 31.4856, lng: 74.3909 },
+  { name: "DHA Phase 2", lat: 31.4754, lng: 74.3815 },
+  { name: "DHA Phase 3", lat: 31.4722, lng: 74.3697 },
+  { name: "DHA Phase 4", lat: 31.4641, lng: 74.3822 },
+  { name: "DHA Phase 5", lat: 31.457, lng: 74.4027 },
+  { name: "DHA Phase 6", lat: 31.4706, lng: 74.4258 },
+  { name: "DHA Phase 7", lat: 31.4376, lng: 74.4244 },
+  { name: "DHA Phase 8", lat: 31.489, lng: 74.4403 },
+  { name: "DHA Phase 9 Prism", lat: 31.4516, lng: 74.4692 },
+  { name: "DHA Rahbar", lat: 31.3809, lng: 74.2611 },
+  { name: "EME Society", lat: 31.4384, lng: 74.216 },
+  { name: "Faisal Town", lat: 31.4767, lng: 74.3046 },
+  { name: "Ferozepur Road", lat: 31.4645, lng: 74.3257 },
+  { name: "Garden Town", lat: 31.4995, lng: 74.3242 },
+  { name: "Gari Shahu", lat: 31.5688, lng: 74.3408 },
+  { name: "Green City", lat: 31.4429, lng: 74.4504 },
+  { name: "Gulberg 1", lat: 31.524, lng: 74.3587 },
+  { name: "Gulberg 2", lat: 31.5206, lng: 74.3491 },
+  { name: "Gulberg 3", lat: 31.5108, lng: 74.3416 },
+  { name: "Gulshan-e-Ravi", lat: 31.5435, lng: 74.2734 },
+  { name: "Harbanspura", lat: 31.5849, lng: 74.4237 },
+  { name: "Ichhra", lat: 31.5322, lng: 74.3194 },
+  { name: "Jail Road", lat: 31.5371, lng: 74.3302 },
+  { name: "Johar Town", lat: 31.467, lng: 74.2728 },
+  { name: "Kahna", lat: 31.3655, lng: 74.365 },
+  { name: "Karim Block", lat: 31.5105, lng: 74.2867 },
+  { name: "Lake City", lat: 31.3578, lng: 74.2556 },
+  { name: "LDA Avenue", lat: 31.3994, lng: 74.2415 },
+  { name: "Liberty Market", lat: 31.5105, lng: 74.3441 },
+  { name: "Mall Road", lat: 31.5576, lng: 74.337 },
+  { name: "Model Town", lat: 31.4846, lng: 74.3225 },
+  { name: "Mughalpura", lat: 31.5762, lng: 74.3779 },
+  { name: "Muslim Town", lat: 31.5087, lng: 74.3182 },
+  { name: "NFC Society", lat: 31.423, lng: 74.2452 },
+  { name: "Paragon City", lat: 31.4494, lng: 74.4508 },
+  { name: "PCSIR Housing Scheme", lat: 31.4527, lng: 74.2941 },
+  { name: "PIA Housing Scheme", lat: 31.4513, lng: 74.2792 },
+  { name: "Punjab Society", lat: 31.4529, lng: 74.3569 },
+  { name: "Raiwind Road", lat: 31.3948, lng: 74.2248 },
+  { name: "Sabzazar", lat: 31.5124, lng: 74.246 },
+  { name: "Samanabad", lat: 31.5356, lng: 74.3003 },
+  { name: "Shadman", lat: 31.5408, lng: 74.3331 },
+  { name: "Shalimar Link Road", lat: 31.5746, lng: 74.3696 },
+  { name: "State Life Housing Society", lat: 31.4563, lng: 74.4281 },
+  { name: "Township", lat: 31.4504, lng: 74.3082 },
+  { name: "Valencia", lat: 31.4067, lng: 74.2573 },
+  { name: "Wapda Town", lat: 31.4322, lng: 74.2695 },
+  { name: "Walton Road", lat: 31.4834, lng: 74.3579 },
+];
+
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { user, token } = useAuth();
@@ -62,6 +132,9 @@ export default function CheckoutPage() {
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState(user?.phone || "");
   const [address, setAddress] = useState("");
+  const [selectedDeliveryAreaName, setSelectedDeliveryAreaName] = useState("");
+  const [streetNumber, setStreetNumber] = useState("");
+  const [houseNumber, setHouseNumber] = useState("");
   const [orderType, setOrderType] = useState<"delivery" | "pickup">(
     "delivery",
   );
@@ -78,7 +151,6 @@ export default function CheckoutPage() {
   const [deliveryStatus, setDeliveryStatus] = useState<"idle" | "checking" | "ok" | "outside">("idle");
   const [deliveryDistanceKm, setDeliveryDistanceKm] = useState<number | null>(null);
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(DELIVERY_RADIUS_KM);
-  const [isLocating, setIsLocating] = useState(false);
   // Prevent the empty-cart redirect from firing after a successful order submission
   const submittedRef = useRef(false);
   const checkoutTrackedRef = useRef(false);
@@ -178,7 +250,9 @@ export default function CheckoutPage() {
       : 0;
 
   const finalTotal = Math.max(0, total + effectiveDelivery - pointsDiscount);
-  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || "";
+  const selectedDeliveryArea = LAHORE_DELIVERY_AREAS.find(
+    (area) => area.name === selectedDeliveryAreaName,
+  );
   const deliveryMapSrc =
     customerLat !== null && customerLng !== null
       ? `https://www.google.com/maps?output=embed&saddr=${STORE_LAT},${STORE_LNG}&daddr=${customerLat},${customerLng}`
@@ -187,36 +261,31 @@ export default function CheckoutPage() {
     customerLat !== null && customerLng !== null
       ? `https://www.google.com/maps/dir/?api=1&origin=${STORE_LAT},${STORE_LNG}&destination=${customerLat},${customerLng}`
       : `https://www.google.com/maps/search/?api=1&query=${STORE_LAT},${STORE_LNG}`;
-  const deliveryAddressNeedsLocation =
-    orderType === "delivery" && address.trim() && (customerLat === null || customerLng === null);
   const deliveryHasLocation = customerLat !== null && customerLng !== null;
+  const deliveryDetailsMissing =
+    orderType === "delivery" &&
+    deliveryStatus === "ok" &&
+    (!streetNumber.trim() || !houseNumber.trim());
   const deliveryBlocked =
     orderType === "delivery" &&
-    (deliveryStatus === "outside" ||
+    (!selectedDeliveryArea ||
+      deliveryStatus === "outside" ||
       deliveryStatus === "checking" ||
-      deliveryAddressNeedsLocation ||
-      (deliveryHasLocation && deliveryStatus !== "ok"));
+      (deliveryHasLocation && deliveryStatus !== "ok") ||
+      deliveryDetailsMissing);
 
-  const useCurrentLocation = () => {
-    if (!("geolocation" in navigator)) {
-      toast.error("Location services are not available in this browser.");
-      return;
-    }
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCustomerLat(pos.coords.latitude);
-        setCustomerLng(pos.coords.longitude);
-        setAddress((current) => current || "Current location");
-        setIsLocating(false);
-      },
-      () => {
-        setIsLocating(false);
-        toast.error("Could not access your location. Please allow location access.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
-    );
-  };
+  useEffect(() => {
+    if (orderType !== "delivery") return;
+
+    const parts = [
+      houseNumber.trim() ? `House ${houseNumber.trim()}` : "",
+      streetNumber.trim() ? `Street ${streetNumber.trim()}` : "",
+      selectedDeliveryArea?.name || "",
+      "Lahore",
+    ].filter(Boolean);
+
+    setAddress(parts.join(", "));
+  }, [houseNumber, orderType, selectedDeliveryArea?.name, streetNumber]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,12 +299,8 @@ export default function CheckoutPage() {
       toast.error("Please enter your phone number");
       return;
     }
-    if (orderType === "delivery" && !address.trim()) {
-      toast.error("Please enter your delivery address");
-      return;
-    }
-    if (deliveryAddressNeedsLocation) {
-      toast.error("Please select an address from search or use your current location so we can check delivery range.");
+    if (orderType === "delivery" && !selectedDeliveryArea) {
+      toast.error("Please select your area in Lahore");
       return;
     }
     if (orderType === "delivery" && deliveryStatus === "outside") {
@@ -244,6 +309,10 @@ export default function CheckoutPage() {
     }
     if (orderType === "delivery" && deliveryHasLocation && deliveryStatus !== "ok") {
       toast.error("Please wait for the delivery range check to finish.");
+      return;
+    }
+    if (orderType === "delivery" && (!houseNumber.trim() || !streetNumber.trim())) {
+      toast.error("Please enter your house and street details");
       return;
     }
     if (orderType === "pickup" && !branchId) {
@@ -449,6 +518,14 @@ export default function CheckoutPage() {
                         onClick={() => {
                           setOrderType(type);
                           setBranchId(undefined);
+                          if (type === "pickup") {
+                            setSelectedDeliveryAreaName("");
+                            setStreetNumber("");
+                            setHouseNumber("");
+                            setAddress("");
+                            setCustomerLat(null);
+                            setCustomerLng(null);
+                          }
                         }}
                         className={`rounded-lg border p-3 text-sm font-medium capitalize transition-colors ${
                           orderType === type
@@ -463,49 +540,37 @@ export default function CheckoutPage() {
 
                   {orderType === "delivery" && (
                     <div className="space-y-3">
-                      <Label htmlFor="address">Delivery Address *</Label>
-                      <div className="relative z-50">
-                        {mapboxToken ? (
-                          <SearchBox
-                            accessToken={mapboxToken}
-                            options={{
-                              language: "en",
-                              proximity: {
-                                lng: STORE_LNG,
-                                lat: STORE_LAT,
-                              },
-                            }}
-                            value={address}
-                            onChange={(value) => {
-                              setAddress(value);
+                      <div className="space-y-1.5">
+                        <Label htmlFor="deliveryArea">Delivery Area *</Label>
+                        <Select
+                          value={selectedDeliveryAreaName}
+                          onValueChange={(value) => {
+                            const area = LAHORE_DELIVERY_AREAS.find((item) => item.name === value);
+                            setSelectedDeliveryAreaName(value);
+                            setStreetNumber("");
+                            setHouseNumber("");
+                            setDeliveryDistanceKm(null);
+                            if (area) {
+                              setCustomerLat(area.lat);
+                              setCustomerLng(area.lng);
+                            } else {
                               setCustomerLat(null);
                               setCustomerLng(null);
-                              setDeliveryDistanceKm(null);
                               setDeliveryStatus("idle");
-                            }}
-                            onRetrieve={(res) => {
-                              const feature = res.features[0];
-                              if (feature) {
-                                setCustomerLng(feature.geometry.coordinates[0]);
-                                setCustomerLat(feature.geometry.coordinates[1]);
-                                setAddress(feature.properties.full_address || feature.properties.name || "");
-                              }
-                            }}
-                          />
-                        ) : (
-                          <Input
-                            id="address"
-                            placeholder="Enter your delivery address"
-                            value={address}
-                            onChange={(e) => {
-                              setAddress(e.target.value);
-                              setCustomerLat(null);
-                              setCustomerLng(null);
-                              setDeliveryDistanceKm(null);
-                              setDeliveryStatus("idle");
-                            }}
-                          />
-                        )}
+                            }
+                          }}
+                        >
+                          <SelectTrigger id="deliveryArea">
+                            <SelectValue placeholder="Select your area in Lahore" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            {LAHORE_DELIVERY_AREAS.map((area) => (
+                              <SelectItem key={area.name} value={area.name}>
+                                {area.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="overflow-hidden rounded-xl border bg-muted">
                         <iframe
@@ -524,23 +589,6 @@ export default function CheckoutPage() {
                             Delivery starts from {STORE_ADDRESS}. Radius: {deliveryRadiusKm} km.
                           </span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={useCurrentLocation}
-                          disabled={isLocating}
-                          className="shrink-0"
-                        >
-                          {isLocating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Locating
-                            </>
-                          ) : (
-                            "Use my location"
-                          )}
-                        </Button>
                       </div>
                       <a
                         href={deliveryDirectionsUrl}
@@ -569,9 +617,31 @@ export default function CheckoutPage() {
                           Delivery is available within {deliveryRadiusKm} km only.
                         </div>
                       )}
-                      {deliveryAddressNeedsLocation && (
+                      {deliveryStatus === "ok" && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="houseNumber">House / Building No. *</Label>
+                            <Input
+                              id="houseNumber"
+                              placeholder="e.g. 75"
+                              value={houseNumber}
+                              onChange={(e) => setHouseNumber(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="streetNumber">Street / Block *</Label>
+                            <Input
+                              id="streetNumber"
+                              placeholder="e.g. CCA, DD Block"
+                              value={streetNumber}
+                              onChange={(e) => setStreetNumber(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {deliveryDetailsMissing && (
                         <p className="text-xs font-medium text-amber-600">
-                          Select an address from search or use your current location to continue delivery.
+                          Add your house/building and street/block details to continue.
                         </p>
                       )}
                     </div>

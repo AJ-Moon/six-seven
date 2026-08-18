@@ -261,7 +261,7 @@ def create_order(
                     if body.customerLat is None or body.customerLng is None:
                         raise HTTPException(
                             status_code=400,
-                            detail="Please select a delivery address from the map search or use your current location."
+                            detail="Please select your Lahore delivery area before placing the order."
                         )
                     try:
                         rest_lat = float(lat_str)
