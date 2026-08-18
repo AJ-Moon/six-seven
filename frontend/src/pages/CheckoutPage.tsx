@@ -357,7 +357,7 @@ export default function CheckoutPage() {
       };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch("/api/orders/", {
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers,
         body: JSON.stringify(payload),

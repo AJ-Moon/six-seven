@@ -179,6 +179,7 @@ _ORDER_SELECT = """
 """
 
 
+@router.post("", status_code=201)
 @router.post("/", status_code=201)
 def create_order(
     body: CreateOrderRequest,
