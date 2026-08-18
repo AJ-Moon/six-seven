@@ -5,6 +5,14 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/orders",
+      "destination": "https://six-seven-production-8ce3.up.railway.app/api/orders"
+    },
+    {
+      "source": "/api/orders/",
+      "destination": "https://six-seven-production-8ce3.up.railway.app/api/orders/"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://six-seven-production-8ce3.up.railway.app/api/:path*"
     },
