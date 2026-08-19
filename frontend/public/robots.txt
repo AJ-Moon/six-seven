@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /history
+Disallow: /login
+Disallow: /order-confirmation
+Disallow: /profile
+
+Sitemap: https://sixseven.pk/sitemap.xml

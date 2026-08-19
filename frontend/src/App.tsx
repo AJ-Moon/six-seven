@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import ChatWidget from "@/components/ChatWidget";
 import { AnalyticsBridge } from "@/components/AnalyticsBridge";
+import { SeoMetadata } from "@/components/SeoMetadata";
 
 // ─── Route-level code splitting ─────────────────────────────────────────────
 // Each page is loaded on demand. Initial JS bundle drops by ~60%.
@@ -93,6 +94,7 @@ export default function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="flavor-hub-theme">
       <BrowserRouter>
+        <SeoMetadata />
         <AnalyticsBridge />
         <TopLoadingBar />
         <Toaster richColors position="top-right" />
