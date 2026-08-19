@@ -1,0 +1,24 @@
+# Six Seven
+
+> Six Seven is a fast food and coffee brand in DHA Phase 4 Lahore, Pakistan.
+
+Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees. Customers can order online for delivery or pickup from the DHA Phase 4 Lahore branch.
+
+## Core Pages
+
+- [Home](https://sixseven.pk/): Six Seven brand homepage.
+- [Menu](https://sixseven.pk/menu): Full menu with burgers, fast food, coffee and drinks.
+- [Branch Locator](https://sixseven.pk/branches): DHA Phase 4 Lahore branch location and directions.
+- [Contact](https://sixseven.pk/contact): Customer support and inquiry page.
+- [FAQ](https://sixseven.pk/faq): Ordering, delivery, pickup and payment questions.
+
+## Business Details
+
+- Brand: Six Seven
+- Website: https://sixseven.pk/
+- Instagram: https://instagram.com/sixseven.pk
+- Facebook: https://facebook.com/sixseven.pk
+- Address: 75 CCA, DD Block, DHA Phase 4, Lahore, Pakistan
+- Service area: Lahore
+- Cuisine: Fast food, beef burgers, coffee, iced teas, smoothies, frappes
+- Ordering: Delivery and pickup

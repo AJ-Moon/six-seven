@@ -25,6 +25,51 @@
     <meta name="twitter:description" content="Order Six Seven burgers, fast food, specialty coffee, iced teas, smoothies and frappes from DHA Phase 4 Lahore for delivery or pickup." />
     <meta name="twitter:image" content="https://sixseven.pk/images/six-seven-logo.png" />
     <title>Six Seven | Fast Food, Beef Burgers & Coffee in DHA Lahore</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": ["FastFoodRestaurant", "CafeOrCoffeeShop"],
+        "@id": "https://sixseven.pk/#business",
+        "name": "Six Seven",
+        "url": "https://sixseven.pk/",
+        "image": "https://sixseven.pk/images/six-seven-logo.png",
+        "logo": "https://sixseven.pk/images/six-seven-logo.png",
+        "priceRange": "Rs.",
+        "servesCuisine": [
+          "Fast food",
+          "Burgers",
+          "Beef burgers",
+          "Coffee",
+          "Iced tea",
+          "Smoothies",
+          "Frappes"
+        ],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "75 CCA, DD Block, DHA Phase 4",
+          "addressLocality": "Lahore",
+          "addressCountry": "PK"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 31.4641372,
+          "longitude": 74.3822137
+        },
+        "areaServed": {
+          "@type": "City",
+          "name": "Lahore"
+        },
+        "sameAs": [
+          "https://instagram.com/sixseven.pk",
+          "https://facebook.com/sixseven.pk"
+        ],
+        "hasMap": "https://maps.google.com/?q=31.4641372,74.3822137",
+        "hasMenu": "https://sixseven.pk/menu",
+        "acceptsReservations": false,
+        "slogan": "Good Food. Good Coffee. Good Mood.",
+        "description": "Six Seven is a DHA Phase 4 Lahore fast food and coffee brand serving beef burgers, loaded snacks, specialty coffee, iced teas, smoothies and frappes for delivery and pickup."
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,7 +78,27 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <h1>Six Seven Fast Food, Beef Burgers and Coffee in DHA Lahore</h1>
+        <p>
+          Six Seven serves burgers, loaded snacks, specialty coffee, iced teas,
+          smoothies, frappes, iced coffees and hot coffees from 75 CCA, DD
+          Block, DHA Phase 4, Lahore.
+        </p>
+        <p>
+          Order online from Six Seven for delivery or pickup. Popular searches
+          for the brand include Six Seven Lahore, Six Seven menu, beef burger
+          Lahore, fast food Lahore, coffee Lahore and cafe in DHA Phase 4.
+        </p>
+        <nav aria-label="Important Six Seven pages">
+          <a href="/menu">Menu</a>
+          <a href="/branches">Branch Locator</a>
+          <a href="/contact">Contact</a>
+          <a href="/faq">FAQ</a>
+        </nav>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -3,6 +3,14 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.sixseven.pk" }],
+      "destination": "https://sixseven.pk/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/orders",
