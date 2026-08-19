@@ -1,5 +1,20 @@
 type EventProperties = Record<string, unknown>
 
+type MetaPixel = ((...args: unknown[]) => void) & {
+  callMethod?: (...args: unknown[]) => void
+  loaded?: boolean
+  push?: MetaPixel
+  queue?: unknown[]
+  version?: string
+}
+
+declare global {
+  interface Window {
+    _fbq?: MetaPixel
+    fbq?: MetaPixel
+  }
+}
+
 type TrackOptions = {
   itemId?: number
   categoryId?: string
@@ -17,9 +32,11 @@ const SESSION_KEY = "order_session_id"
 const ATTRIBUTION_KEY = "order_attribution"
 const CART_KEY = "order_cart_id"
 const MAX_QUEUE = 20
+const META_PIXEL_ID = "850716231340911"
 
 let queue: Array<Record<string, unknown>> = []
 let flushTimer: number | null = null
+let metaPixelInitialized = false
 
 const newId = (prefix: string) => `${prefix}_${crypto.randomUUID()}`
 
@@ -71,10 +88,86 @@ function deviceClass() {
   return width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop"
 }
 
+function initializeMetaPixel() {
+  if (metaPixelInitialized || !META_PIXEL_ID) return
+
+  if (!window.fbq) {
+    const fbq: MetaPixel = function (...args: unknown[]) {
+      if (fbq.callMethod) fbq.callMethod(...args)
+      else fbq.queue?.push(args)
+    }
+    window.fbq = fbq
+    window._fbq = fbq
+    fbq.push = fbq
+    fbq.loaded = true
+    fbq.version = "2.0"
+    fbq.queue = []
+
+    const script = document.createElement("script")
+    script.async = true
+    script.src = "https://connect.facebook.net/en_US/fbevents.js"
+    const firstScript = document.getElementsByTagName("script")[0]
+    firstScript?.parentNode?.insertBefore(script, firstScript)
+  }
+
+  window.fbq("init", META_PIXEL_ID)
+  metaPixelInitialized = true
+}
+
+function trackMetaPixelEvent(eventName: string, properties: EventProperties = {}) {
+  if (!window.fbq) return
+
+  if (eventName === "page_viewed") {
+    window.fbq("track", "PageView")
+    return
+  }
+  if (eventName === "item_added_to_cart") {
+    window.fbq("track", "AddToCart", {
+      content_ids: properties.itemId ? [String(properties.itemId)] : undefined,
+      content_name: properties.name,
+      currency: "PKR",
+      value: properties.displayedPrice,
+    })
+    return
+  }
+  if (eventName === "checkout_started") {
+    window.fbq("track", "InitiateCheckout", {
+      currency: "PKR",
+      num_items: properties.itemCount,
+      value: properties.displayedTotal,
+    })
+    return
+  }
+  if (eventName === "checkout_step_completed" && properties.step === "ORDER_CONFIRMED") {
+    window.fbq("track", "Purchase", {
+      currency: properties.currency || "PKR",
+      value: properties.total,
+    })
+    return
+  }
+
+  window.fbq("trackCustom", eventName, properties)
+}
+
 export function track(eventName: string, options: TrackOptions = {}) {
   const attribution = getAttribution()
   const returningVisitor = Boolean(localStorage.getItem(VISITOR_KEY))
   const visitorId = getVisitorId()
+  const properties = {
+    itemId: options.itemId,
+    categoryId: options.categoryId,
+    cartId: options.cartId,
+    orderId: options.orderId,
+    experimentId: options.experimentId,
+    variantId: options.variantId,
+    missionId: options.missionId,
+    deviceClass: deviceClass(),
+    returningVisitor,
+    ...options.properties,
+  }
+
+  trackMetaPixelEvent(eventName, properties)
+
   queue.push({
     eventId: crypto.randomUUID(),
     eventName,
@@ -91,11 +184,7 @@ export function track(eventName: string, options: TrackOptions = {}) {
     experimentId: options.experimentId,
     variantId: options.variantId,
     missionId: options.missionId,
-    properties: {
-      deviceClass: deviceClass(),
-      returningVisitor,
-      ...options.properties,
-    },
+    properties,
     schemaVersion: 1,
     consentState: options.consentState || "unknown",
   })
@@ -125,6 +214,7 @@ export function initializeAnalytics() {
   getVisitorId()
   getSessionId()
   getCartId()
+  initializeMetaPixel()
   window.addEventListener("pagehide", () => void flushEvents())
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") void flushEvents()
