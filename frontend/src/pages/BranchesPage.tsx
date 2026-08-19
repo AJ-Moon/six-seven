@@ -22,7 +22,46 @@ type Branch = {
   isOpen: boolean;
 };
 
+const DEFAULT_BRANCHES: Branch[] = [
+  {
+    id: 1,
+    name: "Six Seven DHA Phase 4",
+    address: "75 CCA, DD Block, DHA Phase 4",
+    city: "Lahore",
+    phone: "DM @sixseven.pk",
+    hours:
+      "Mon-Thu 12 PM-1:30 AM; Fri 2 PM-2:30 AM; Sat 12 PM-2:30 AM; Sun 5 PM-1:30 AM",
+    isOpen: true,
+  },
+];
+
 const fullAddress = (b: Branch) => `${b.address}, ${b.city}`;
+
+const isPlaceholderBranch = (branch: Branch) => {
+  const text = [branch.name, branch.address, branch.city, branch.phone]
+    .join(" ")
+    .toLowerCase();
+  return (
+    text.includes("flavor hub") ||
+    text.includes("new york") ||
+    text.includes("555-01")
+  );
+};
+
+const normalizeBranches = (data: unknown): Branch[] => {
+  if (!Array.isArray(data)) return DEFAULT_BRANCHES;
+  const validBranches = data.filter(
+    (branch): branch is Branch =>
+      branch &&
+      typeof branch === "object" &&
+      typeof branch.id === "number" &&
+      typeof branch.name === "string" &&
+      typeof branch.address === "string",
+  );
+  if (!validBranches.length) return DEFAULT_BRANCHES;
+  if (validBranches.every(isPlaceholderBranch)) return DEFAULT_BRANCHES;
+  return validBranches;
+};
 
 export default function BranchesPage() {
   const { restaurantName } = useRestaurant();
@@ -36,9 +75,9 @@ export default function BranchesPage() {
 
   useEffect(() => {
     fetch("/api/branches/")
-      .then((r) => r.json())
-      .then((data: Branch[]) => setBranches(data))
-      .catch(() => {})
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setBranches(normalizeBranches(data)))
+      .catch(() => setBranches(DEFAULT_BRANCHES))
       .finally(() => setIsLoading(false));
   }, []);
 
