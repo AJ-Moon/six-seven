@@ -6,7 +6,28 @@ const SITE_URL = "https://sixseven.pk";
 const BRAND_NAME = "Six Seven";
 const DEFAULT_IMAGE = `${SITE_URL}/images/six-seven-logo.png`;
 const STORE_ADDRESS = "75 CCA, DD Block, DHA Phase 4, Lahore";
-const PHONE_TEXT = "DM @sixseven.pk";
+const PHONE_TEXT = "+923246756767";
+const ORDERING_URL = `${SITE_URL}/menu`;
+
+const OPENING_HOURS_SPECIFICATION = [
+  { dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday"], opens: "12:00", closes: "01:30" },
+  { dayOfWeek: "Friday", opens: "14:00", closes: "02:30" },
+  { dayOfWeek: "Saturday", opens: "12:00", closes: "02:30" },
+  { dayOfWeek: "Sunday", opens: "17:00", closes: "01:30" },
+];
+
+const MENU_KEYWORDS = [
+  "fast food Lahore",
+  "beef burger Lahore",
+  "burgers near DHA Phase 4",
+  "coffee Lahore",
+  "iced coffee Lahore",
+  "iced tea Lahore",
+  "smoothies Lahore",
+  "frappes Lahore",
+  "loaded fries Lahore",
+  "wraps Lahore",
+];
 
 const ROUTE_META: Record<
   string,
@@ -166,9 +187,11 @@ export function SeoMetadata() {
       "@id": `${SITE_URL}/#business`,
       name: BRAND_NAME,
       url: SITE_URL,
+      telephone: PHONE_TEXT,
       image: DEFAULT_IMAGE,
       logo: DEFAULT_IMAGE,
       priceRange: "Rs.",
+      keywords: MENU_KEYWORDS.join(", "),
       servesCuisine: [
         "Fast food",
         "Burgers",
@@ -204,8 +227,40 @@ export function SeoMetadata() {
       ],
       hasMap: "https://maps.google.com/?q=31.4641372,74.3822137",
       openingHours: ORDER_HOURS_TEXT,
-      hasMenu: `${SITE_URL}/menu`,
+      openingHoursSpecification: OPENING_HOURS_SPECIFICATION.map((hours) => ({
+        "@type": "OpeningHoursSpecification",
+        ...hours,
+      })),
+      hasMenu: ORDERING_URL,
+      menu: ORDERING_URL,
       acceptsReservations: false,
+      paymentAccepted: ["Cash on delivery", "Card on delivery", "Online transfer"],
+      potentialAction: {
+        "@type": "OrderAction",
+        target: ORDERING_URL,
+        deliveryMethod: [
+          "https://schema.org/OnSitePickup",
+          "https://schema.org/DeliveryModeOwnFleet",
+        ],
+      },
+      makesOffer: [
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "MenuItem",
+            name: "Beef burgers",
+            description: "Six Seven beef burgers and fast food favorites in DHA Phase 4 Lahore.",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "MenuItem",
+            name: "Coffee and signature drinks",
+            description: "Hot coffee, iced coffee, iced teas, smoothies and frappes.",
+          },
+        },
+      ],
       slogan: "Good Food. Good Coffee. Good Mood.",
       description:
         "Six Seven is a Lahore fast food and coffee brand serving burgers, loaded snacks, specialty coffee, iced teas, smoothies and frappes from DHA Phase 4.",

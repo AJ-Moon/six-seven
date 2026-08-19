@@ -32,9 +32,11 @@
         "@id": "https://sixseven.pk/#business",
         "name": "Six Seven",
         "url": "https://sixseven.pk/",
+        "telephone": "+923246756767",
         "image": "https://sixseven.pk/images/six-seven-logo.png",
         "logo": "https://sixseven.pk/images/six-seven-logo.png",
         "priceRange": "Rs.",
+        "keywords": "fast food Lahore, beef burger Lahore, burgers near DHA Phase 4, coffee Lahore, iced coffee Lahore, iced tea Lahore, smoothies Lahore, frappes Lahore, loaded fries Lahore, wraps Lahore",
         "servesCuisine": [
           "Fast food",
           "Burgers",
@@ -64,8 +66,63 @@
           "https://facebook.com/sixseven.pk"
         ],
         "hasMap": "https://maps.google.com/?q=31.4641372,74.3822137",
+        "openingHours": "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday"],
+            "opens": "12:00",
+            "closes": "01:30"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Friday",
+            "opens": "14:00",
+            "closes": "02:30"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Saturday",
+            "opens": "12:00",
+            "closes": "02:30"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Sunday",
+            "opens": "17:00",
+            "closes": "01:30"
+          }
+        ],
         "hasMenu": "https://sixseven.pk/menu",
+        "menu": "https://sixseven.pk/menu",
         "acceptsReservations": false,
+        "paymentAccepted": ["Cash on delivery", "Card on delivery", "Online transfer"],
+        "potentialAction": {
+          "@type": "OrderAction",
+          "target": "https://sixseven.pk/menu",
+          "deliveryMethod": [
+            "https://schema.org/OnSitePickup",
+            "https://schema.org/DeliveryModeOwnFleet"
+          ]
+        },
+        "makesOffer": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "MenuItem",
+              "name": "Beef burgers",
+              "description": "Six Seven beef burgers and fast food favorites in DHA Phase 4 Lahore."
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "MenuItem",
+              "name": "Coffee and signature drinks",
+              "description": "Hot coffee, iced coffee, iced teas, smoothies and frappes."
+            }
+          }
+        ],
         "slogan": "Good Food. Good Coffee. Good Mood.",
         "description": "Six Seven is a DHA Phase 4 Lahore fast food and coffee brand serving beef burgers, loaded snacks, specialty coffee, iced teas, smoothies and frappes for delivery and pickup."
       }
@@ -85,6 +142,11 @@
           Six Seven serves burgers, loaded snacks, specialty coffee, iced teas,
           smoothies, frappes, iced coffees and hot coffees from 75 CCA, DD
           Block, DHA Phase 4, Lahore.
+        </p>
+        <p>
+          The menu includes beef burgers, wraps, loaded fries, combo meals,
+          signature drinks, iced teas, smoothies, frappes, iced coffee and hot
+          coffee for Lahore customers near DHA Phase 4.
         </p>
         <p>
           Order online from Six Seven for delivery or pickup. Popular searches

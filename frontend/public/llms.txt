@@ -22,3 +22,14 @@ Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoot
 - Service area: Lahore
 - Cuisine: Fast food, beef burgers, coffee, iced teas, smoothies, frappes
 - Ordering: Delivery and pickup
+- Phone: +92 324 6756767
+- Hours: Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM, Sunday 5 PM-1:30 AM
+- Payments: delivery orders support cash on delivery, card on delivery and online transfer; pickup orders are paid at the branch.
+
+## Menu Highlights
+
+- Food: beef burgers, wraps, loaded fries, fries, cheese balls, chicken strips, waffles, mini pancakes and combo meals.
+- Signature drinks: strawberry rush, mango burst, peach breeze, berry cola and signature refreshers.
+- Iced teas: peach iced tea, strawberry iced tea and passion fruit iced tea.
+- Smoothies and frappes: mango smoothie, strawberry smoothie, blackberry smoothie, mocha frappe, caramel frappe and pistachio frappe.
+- Coffee: espresso, americano, latte, iced coffee and related hot or cold coffee drinks.
