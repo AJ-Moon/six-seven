@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
-import { Instagram, Twitter, Youtube, Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin, Clock } from "lucide-react";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
 
@@ -25,6 +25,7 @@ export function Footer() {
     primaryColor,
     footerTagline,
     instagramUrl,
+    facebookUrl,
     twitterUrl,
     tiktokUrl,
     whatsapp,
@@ -51,6 +52,7 @@ export function Footer() {
 
   const socialLinks = [
     instagramUrl ? { icon: Instagram, href: instagramUrl,               label: "Instagram" } : null,
+    facebookUrl  ? { icon: Facebook,  href: facebookUrl,                label: "Facebook"  } : null,
     twitterUrl   ? { icon: Twitter,   href: twitterUrl,                 label: "Twitter"   } : null,
     tiktokUrl    ? { icon: Youtube,   href: tiktokUrl,                  label: "TikTok"    } : null,
     whatsapp     ? { icon: Phone,     href: formatWhatsappLink(whatsapp), label: "WhatsApp" } : null,

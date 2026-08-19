@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +39,12 @@ function adminFetch(url: string, options: RequestInit = {}) {
     },
   });
 }
+
+const DEFAULT_SETTING_VALUES: Record<string, string> = {
+  instagram_url: "https://instagram.com/sixseven.pk",
+  facebook_url: "https://facebook.com/sixseven.pk",
+  address: "75 CCA, DD Block, DHA Phase 4, Lahore",
+};
 
 function RestaurantStatusCard() {
   const [restaurantOpen, setRestaurantOpen] = useState(true);
@@ -145,6 +152,9 @@ function StoreSettingsTab() {
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState("5");
   const [restaurantLat, setRestaurantLat] = useState("");
   const [restaurantLng, setRestaurantLng] = useState("");
+  const [globalDiscountPercent, setGlobalDiscountPercent] = useState("0");
+  const [globalDiscountExcludedCategories, setGlobalDiscountExcludedCategories] =
+    useState("Deals, Combo Meal");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -173,6 +183,10 @@ function StoreSettingsTab() {
         setDeliveryRadiusKm(d.delivery_radius_km ?? "5");
         setRestaurantLat(d.restaurant_lat ?? "");
         setRestaurantLng(d.restaurant_lng ?? "");
+        setGlobalDiscountPercent(d.global_discount_percent ?? "0");
+        setGlobalDiscountExcludedCategories(
+          d.global_discount_excluded_categories ?? "Deals, Combo Meal",
+        );
       })
       .finally(() => setLoading(false));
   }, []);
@@ -218,6 +232,20 @@ function StoreSettingsTab() {
         ),
         restaurant_lat: restaurantLat,
         restaurant_lng: restaurantLng,
+        global_discount_percent: String(
+          Math.min(
+            90,
+            Math.max(
+              0,
+              Number.parseInt(globalDiscountPercent || "0", 10) || 0,
+            ),
+          ),
+        ),
+        global_discount_excluded_categories: globalDiscountExcludedCategories
+          .split(",")
+          .map((category) => category.trim())
+          .filter(Boolean)
+          .join(", "),
       }),
     });
     if (res.ok) {
@@ -345,6 +373,38 @@ function StoreSettingsTab() {
       </div>
 
       <div className="rounded-lg border p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-foreground">Menu Discounts</h3>
+        <div className="space-y-2">
+          <Label htmlFor="global-discount-percent">Global menu discount (%)</Label>
+          <Input
+            id="global-discount-percent"
+            type="number"
+            min="0"
+            max="90"
+            step="1"
+            value={globalDiscountPercent}
+            onChange={(e) => setGlobalDiscountPercent(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Applies to all available menu items unless their category is excluded below.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="global-discount-exclusions">Excluded categories</Label>
+          <Textarea
+            id="global-discount-exclusions"
+            rows={3}
+            value={globalDiscountExcludedCategories}
+            onChange={(e) => setGlobalDiscountExcludedCategories(e.target.value)}
+            placeholder="Deals, Combo Meal"
+          />
+          <p className="text-xs text-muted-foreground">
+            Separate categories with commas. These sections keep their normal/manual deal prices.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-lg border p-4 space-y-4">
         <h3 className="text-sm font-semibold text-foreground">
           Rewards Program
         </h3>
@@ -451,7 +511,7 @@ function SettingsTab({
       .then((d: Record<string, string>) => {
         const filtered: Record<string, string> = {};
         fields.forEach((f) => {
-          filtered[f] = d[f] ?? "";
+          filtered[f] = d[f] ?? DEFAULT_SETTING_VALUES[f] ?? "";
         });
         setValues(filtered);
         setLoading(false);

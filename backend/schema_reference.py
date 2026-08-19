@@ -385,7 +385,7 @@ def init_db() -> None:
             cur.execute("SELECT id FROM restaurants WHERE slug = 'default' LIMIT 1")
             row = cur.fetchone()
             if not row:
-                restaurant_name = os.getenv("RESTAURANT_NAME", "Flavor Hub")
+                restaurant_name = os.getenv("RESTAURANT_NAME", "Six Seven")
                 cur.execute(
                     "INSERT INTO restaurants (name, slug) VALUES (%s, 'default') RETURNING id",
                     (restaurant_name,),

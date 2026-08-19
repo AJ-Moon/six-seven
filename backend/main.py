@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Flavor Hub API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Six Seven API", version="1.0.0", lifespan=lifespan)
 
 _backend_dir = Path(__file__).resolve().parent
 _static_dir = static_dir()
@@ -99,6 +99,7 @@ def public_settings(restaurant_id: int = Depends(get_restaurant_id)):
         "delivery_charge", "min_order_amount", "restaurant_open",
         "announcement", "announcement_active", "maps_embed", "tagline", "brand_name",
         "currency", "currency_symbol", "delivery_radius_km", "cash_on_delivery",
+        "global_discount_percent", "global_discount_excluded_categories",
         # editable site copy — every one of these is surfaced by RestaurantContext,
         # so anything left out here silently falls back to the built-in default.
         "closed_message", "footer_tagline", "menu_subtitle",
@@ -114,7 +115,18 @@ def public_settings(restaurant_id: int = Depends(get_restaurant_id)):
                 (restaurant_id,),
             )
             rows = cur.fetchall()
-    return {r[0]: r[1] for r in rows if r[0] in PUBLIC_KEYS}
+    data = {r[0]: r[1] for r in rows if r[0] in PUBLIC_KEYS}
+    defaults = {
+        "brand_name": "Six Seven",
+        "instagram_url": "https://instagram.com/sixseven.pk",
+        "facebook_url": "https://facebook.com/sixseven.pk",
+        "address": "75 CCA, DD Block, DHA Phase 4, Lahore",
+        "maps_embed": "https://www.google.com/maps?q=31.4641372,74.3822137&z=16&output=embed",
+    }
+    for key, value in defaults.items():
+        if not str(data.get(key) or "").strip():
+            data[key] = value
+    return data
 
 
 @app.exception_handler(Exception)

@@ -1234,6 +1234,8 @@ class SettingsBody(BaseModel):
     delivery_radius_km: Optional[str] = None
     restaurant_lat: Optional[str] = None
     restaurant_lng: Optional[str] = None
+    global_discount_percent: Optional[str] = None
+    global_discount_excluded_categories: Optional[str] = None
 
 
 @router.put("/settings")

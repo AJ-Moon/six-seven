@@ -113,17 +113,17 @@ async function fileToDataUrl(file: File): Promise<string> {
 function LayoutMockup({ layout }: { layout: LayoutOption }) {
   if (layout === "classic") {
     return (
-      <div className="h-28 w-full rounded-lg border bg-muted/30 p-3">
-        <div className="h-8 rounded bg-muted" />
+      <div className="h-28 w-full rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="h-8 rounded bg-orange-100" />
         <div className="mt-3 flex gap-2">
-          <div className="h-4 w-16 rounded-full bg-muted" />
-          <div className="h-4 w-14 rounded-full bg-muted" />
-          <div className="h-4 w-20 rounded-full bg-muted" />
+          <div className="h-4 w-16 rounded-full bg-orange-500" />
+          <div className="h-4 w-14 rounded-full bg-slate-200" />
+          <div className="h-4 w-20 rounded-full bg-slate-200" />
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="h-8 rounded bg-muted" />
-          <div className="h-8 rounded bg-muted" />
-          <div className="h-8 rounded bg-muted" />
+          <div className="h-8 rounded border bg-slate-50" />
+          <div className="h-8 rounded border bg-slate-50" />
+          <div className="h-8 rounded border bg-slate-50" />
         </div>
       </div>
     );
@@ -131,33 +131,33 @@ function LayoutMockup({ layout }: { layout: LayoutOption }) {
 
   if (layout === "modern") {
     return (
-      <div className="h-28 w-full rounded-lg border bg-muted/30 p-3">
-        <div className="relative h-10 rounded bg-muted">
-          <div className="absolute left-2 top-2 h-2 w-24 rounded bg-background/80" />
-          <div className="absolute left-2 top-5 h-2 w-16 rounded bg-background/60" />
+      <div className="h-28 w-full rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="relative h-10 rounded bg-slate-800">
+          <div className="absolute left-2 top-2 h-2 w-24 rounded bg-white" />
+          <div className="absolute left-2 top-5 h-2 w-16 rounded bg-orange-300" />
         </div>
         <div className="mt-3 flex gap-2 overflow-hidden">
-          <div className="h-4 w-14 rounded-full bg-muted" />
-          <div className="h-4 w-14 rounded-full bg-muted" />
-          <div className="h-4 w-14 rounded-full bg-muted" />
-          <div className="h-4 w-14 rounded-full bg-muted" />
+          <div className="h-4 w-14 rounded-full bg-orange-500" />
+          <div className="h-4 w-14 rounded-full bg-slate-200" />
+          <div className="h-4 w-14 rounded-full bg-slate-200" />
+          <div className="h-4 w-14 rounded-full bg-slate-200" />
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="h-6 rounded bg-muted" />
-          <div className="h-6 rounded bg-muted" />
+          <div className="h-6 rounded border bg-slate-50" />
+          <div className="h-6 rounded border bg-slate-50" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-28 w-full rounded-lg border bg-muted/30 p-3">
-      <div className="h-2 w-20 rounded bg-muted" />
-      <div className="mt-2 h-1.5 w-36 rounded bg-muted" />
+    <div className="h-28 w-full rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="h-2 w-20 rounded bg-orange-500" />
+      <div className="mt-2 h-1.5 w-36 rounded bg-slate-300" />
       <div className="mt-4 space-y-2">
-        <div className="h-5 rounded border bg-background/90" />
-        <div className="h-5 rounded border bg-background/90" />
-        <div className="h-5 rounded border bg-background/90" />
+        <div className="h-5 rounded border bg-slate-50" />
+        <div className="h-5 rounded border bg-slate-50" />
+        <div className="h-5 rounded border bg-slate-50" />
       </div>
     </div>
   );

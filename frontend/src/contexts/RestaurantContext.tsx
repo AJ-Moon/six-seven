@@ -47,6 +47,7 @@ export interface RestaurantTheme {
   email: string;
   address: string;
   instagramUrl: string;
+  facebookUrl: string;
   twitterUrl: string;
   tiktokUrl: string;
   whatsapp: string;
@@ -54,7 +55,7 @@ export interface RestaurantTheme {
 }
 
 const DEFAULTS: RestaurantTheme = {
-  restaurantName: "Restaurant",
+  restaurantName: "Six Seven",
   logoUrl: "",
   primaryColor: "#e85d04",
   secondaryColor: "#faa307",
@@ -93,7 +94,8 @@ const DEFAULTS: RestaurantTheme = {
   phone: "",
   email: "",
   address: "",
-  instagramUrl: "",
+  instagramUrl: "https://instagram.com/sixseven.pk",
+  facebookUrl: "https://facebook.com/sixseven.pk",
   twitterUrl: "",
   tiktokUrl: "",
   whatsapp: "",
@@ -256,7 +258,10 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           phone: settingsData?.phone || "",
           email: settingsData?.email || "",
           address: settingsData?.address || "",
-          instagramUrl: settingsData?.instagram_url || "",
+          instagramUrl:
+            settingsData?.instagram_url || "https://instagram.com/sixseven.pk",
+          facebookUrl:
+            settingsData?.facebook_url || "https://facebook.com/sixseven.pk",
           twitterUrl: settingsData?.twitter_url || "",
           tiktokUrl: settingsData?.tiktok_url || "",
           whatsapp: settingsData?.whatsapp || "",
@@ -374,7 +379,8 @@ export async function fetchRestaurantTheme(
       phone: "",
       email: "",
       address: "",
-      instagramUrl: "",
+      instagramUrl: "https://instagram.com/sixseven.pk",
+      facebookUrl: "https://facebook.com/sixseven.pk",
       twitterUrl: "",
       tiktokUrl: "",
       whatsapp: "",

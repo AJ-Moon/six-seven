@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 
 from fastapi import HTTPException
 
-from core.money import MarginBreakdown, cents_to_float, to_cents
+from core.money import MarginBreakdown, cents_to_float, percentage_of_cents, to_cents
 from services.events import emit_server_event
 
 
@@ -71,9 +71,54 @@ def normalize_requested_lines(lines: Iterable[RequestedLine]) -> list[RequestedL
     return [RequestedLine(menu_item_id=item_id, quantity=quantity) for item_id, quantity in combined.items()]
 
 
+def _split_csv(value: str) -> set[str]:
+    return {part.strip().lower() for part in str(value or "").split(",") if part.strip()}
+
+
+def load_global_discount_config(cursor, tenant_id: int) -> tuple[int, set[str]]:
+    cursor.execute(
+        """
+        SELECT key, value
+        FROM settings
+        WHERE restaurant_id = %s
+          AND key IN ('global_discount_percent', 'global_discount_excluded_categories')
+        """,
+        (tenant_id,),
+    )
+    raw = {str(key): str(value or "") for key, value in cursor.fetchall()}
+    try:
+        percent = int(float(raw.get("global_discount_percent", "0")))
+    except (TypeError, ValueError):
+        percent = 0
+    percent = max(0, min(90, percent))
+    excluded = _split_csv(raw.get("global_discount_excluded_categories", "Deals, Combo Meal"))
+    return percent, excluded
+
+
+def effective_sale_price_cents(
+    gross_cents: int,
+    explicit_sale_cents: Optional[int],
+    category: str,
+    global_discount_percent: int,
+    excluded_categories: set[str],
+) -> Optional[int]:
+    candidates: list[int] = []
+    if explicit_sale_cents is not None and explicit_sale_cents < gross_cents:
+        candidates.append(max(0, explicit_sale_cents))
+    if (
+        global_discount_percent > 0
+        and (category or "").strip().lower() not in excluded_categories
+    ):
+        candidates.append(max(0, gross_cents - percentage_of_cents(gross_cents, global_discount_percent)))
+    if not candidates:
+        return None
+    return min(gross_cents, *candidates)
+
+
 def price_menu_lines(cursor, tenant_id: int, requested: Iterable[RequestedLine]) -> list[PricedLine]:
     normalized = normalize_requested_lines(requested)
     item_ids = [line.menu_item_id for line in normalized]
+    global_discount_percent, excluded_categories = load_global_discount_config(cursor, tenant_id)
     cursor.execute(
         """SELECT id, name, category, currency,
                   COALESCE(price_cents, round(price * 100)::bigint),
@@ -95,7 +140,14 @@ def price_menu_lines(cursor, tenant_id: int, requested: Iterable[RequestedLine])
             raise HTTPException(status_code=409, detail=f"{row[1]} is currently unavailable")
         gross_cents = int(row[4])
         sale_cents = int(row[5]) if row[5] is not None else None
-        net_cents = min(gross_cents, sale_cents) if sale_cents is not None else gross_cents
+        effective_sale_cents = effective_sale_price_cents(
+            gross_cents,
+            sale_cents,
+            row[2] or "",
+            global_discount_percent,
+            excluded_categories,
+        )
+        net_cents = effective_sale_cents if effective_sale_cents is not None else gross_cents
         priced.append(
             PricedLine(
                 menu_item_id=int(row[0]), name=row[1], category=row[2] or "",

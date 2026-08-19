@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from db import get_db
 from dependencies.auth import get_restaurant_id
+from core.money import cents_to_float
+from services.commerce import effective_sale_price_cents, load_global_discount_config
 
 router = APIRouter()
 
@@ -31,10 +33,21 @@ def _category_order_sql(column: str = "category") -> str:
     return f"CASE {clauses_sql} ELSE {len(CATEGORY_ORDER)} END"
 
 
-def _row_to_item(r):
+def _row_to_item(r, global_discount: tuple[int, set[str]] | None = None):
+    global_discount_percent, excluded_categories = global_discount or (0, set())
+    gross_cents = int(r[11])
+    explicit_sale_cents = int(r[12]) if r[12] is not None else None
+    sale_cents = effective_sale_price_cents(
+        gross_cents,
+        explicit_sale_cents,
+        r[1] or "",
+        global_discount_percent,
+        excluded_categories,
+    )
     return {
         "id": r[0], "category": r[1], "name": r[2], "description": r[3],
-        "price": float(r[4]), "salePrice": float(r[5]) if r[5] is not None else None,
+        "price": float(r[4]),
+        "salePrice": cents_to_float(sale_cents) if sale_cents is not None else None,
         "image": r[6], "rating": float(r[7]),
         "isSpicy": r[8], "isPopular": r[9], "isFeatured": r[10],
     }
@@ -66,7 +79,12 @@ def get_menu(
     restaurant_id: int = Depends(get_restaurant_id),
 ):
     query = (
-        "SELECT id, category, name, description, price, sale_price, image, rating, is_spicy, is_popular, is_featured "
+        """SELECT id, category, name, description, price, sale_price, image, rating,
+                  is_spicy, is_popular, is_featured,
+                  COALESCE(price_cents, round(price * 100)::bigint),
+                  COALESCE(sale_price_cents,
+                           CASE WHEN sale_price IS NULL THEN NULL ELSE round(sale_price * 100)::bigint END)
+           """
         "FROM menu_items WHERE restaurant_id = %s AND is_available = TRUE"
     )
     params: list = [restaurant_id]
@@ -86,10 +104,11 @@ def get_menu(
         query += f" ORDER BY {_category_order_sql()}, display_order ASC NULLS LAST, is_popular DESC"
     with get_db() as conn:
         with conn.cursor() as cur:
+            global_discount = load_global_discount_config(cur, restaurant_id)
             cur.execute(query, params)
             rows = cur.fetchall()
     response.headers["Cache-Control"] = "public, max-age=300"
-    return [_row_to_item(r) for r in rows]
+    return [_row_to_item(r, global_discount) for r in rows]
 
 
 @router.get("/{item_id}")
@@ -97,11 +116,17 @@ def get_menu_item(item_id: int, restaurant_id: int = Depends(get_restaurant_id))
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, category, name, description, price, sale_price, image, rating, is_spicy, is_popular, is_featured "
+                """SELECT id, category, name, description, price, sale_price, image, rating,
+                          is_spicy, is_popular, is_featured,
+                          COALESCE(price_cents, round(price * 100)::bigint),
+                          COALESCE(sale_price_cents,
+                                   CASE WHEN sale_price IS NULL THEN NULL ELSE round(sale_price * 100)::bigint END)
+                   """
                 "FROM menu_items WHERE id = %s AND restaurant_id = %s AND is_available = TRUE",
                 (item_id, restaurant_id),
             )
             row = cur.fetchone()
+            global_discount = load_global_discount_config(cur, restaurant_id)
     if not row:
         raise HTTPException(status_code=404, detail="Item not found")
-    return _row_to_item(row)
+    return _row_to_item(row, global_discount)

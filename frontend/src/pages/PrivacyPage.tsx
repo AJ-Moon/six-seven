@@ -16,11 +16,7 @@ export default function PrivacyPage() {
         if (!data) return
         setTitle(data.title || "Privacy Policy")
         setContent(data.content || "")
-        if (data.updated_at) {
-          setUpdatedAt(new Date(data.updated_at).toLocaleDateString("en-US", {
-            year: "numeric", month: "long", day: "numeric"
-          }))
-        }
+        setUpdatedAt(data.updatedAt || data.updated_at || "")
       })
       .finally(() => setLoading(false))
   }, [])

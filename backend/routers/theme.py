@@ -11,6 +11,16 @@ from dependencies.auth import get_restaurant_id
 router = APIRouter()
 
 
+PLACEHOLDER_TEXT = {"flavor hub", "welcome to flavor hub", "seeded check"}
+
+
+def _clean_theme_text(value: Optional[str], fallback: str = "") -> str:
+    text = str(value or "").strip()
+    if not text or text.lower() in PLACEHOLDER_TEXT:
+        return fallback
+    return text
+
+
 def _normalize_theme_slides(value: Optional[str]) -> list[dict]:
     if not value:
         return []
@@ -50,7 +60,7 @@ def get_theme(restaurant_id: int = Depends(get_restaurant_id)):
             restaurant_row = cur.fetchone()
             if not restaurant_row:
                 raise HTTPException(status_code=404, detail="Restaurant not found")
-            default_name = restaurant_row[0]
+            default_name = _clean_theme_text(restaurant_row[0], "Six Seven")
 
             cur.execute(
                 """SELECT primary_color, secondary_color, accent_color,
@@ -96,12 +106,12 @@ def get_theme(restaurant_id: int = Depends(get_restaurant_id)):
         "logoUrl": row[3],
         "faviconUrl": row[4],
         # Fall back to the restaurant's canonical name if theme name is empty
-        "restaurantName": row[5] or default_name,
-        "heroText": row[6],
-        "heroSubtext": row[7],
+        "restaurantName": _clean_theme_text(row[5], default_name),
+        "heroText": _clean_theme_text(row[6]),
+        "heroSubtext": _clean_theme_text(row[7]),
         "fontFamily": row[8],
         "layout": row[9] or "classic",
-        "slogan": row[10] or row[7] or "",
+        "slogan": _clean_theme_text(row[10], _clean_theme_text(row[7])),
         "heroImageUrl": row[11] or "",
         "slides": slides,
     }

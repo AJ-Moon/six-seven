@@ -16,11 +16,7 @@ export default function TermsPage() {
         if (!data) return
         setTitle(data.title || "Terms of Service")
         setContent(data.content || "")
-        if (data.updated_at) {
-          setEffectiveDate(new Date(data.updated_at).toLocaleDateString("en-US", {
-            year: "numeric", month: "long", day: "numeric"
-          }))
-        }
+        setEffectiveDate(data.updatedAt || data.updated_at || "")
       })
       .finally(() => setLoading(false))
   }, [])
