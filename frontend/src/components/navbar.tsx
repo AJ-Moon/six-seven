@@ -7,6 +7,7 @@ import {
   User,
   MapPin,
   Phone,
+  CircleHelp,
   UtensilsCrossed,
   Truck,
   Star,
@@ -30,10 +31,12 @@ import { useCart } from "@/contexts/CartContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 
 const publicNavLinks = [
-  { href: "/menu", label: "Explore Menu", icon: UtensilsCrossed },
-  { href: "/track", label: "Track Order", icon: Truck },
+  { href: "/menu", label: "Menu", icon: UtensilsCrossed },
   { href: "/branches", label: "Branch Locator", icon: MapPin },
   { href: "/contact", label: "Contact Us", icon: Phone },
+  { href: "/about", label: "About Us", icon: Star },
+  { href: "/faq", label: "FAQ", icon: CircleHelp },
+  { href: "/track", label: "Track Order", icon: Truck, privateAction: true },
 ];
 
 const authNavLinks = [
@@ -63,13 +66,15 @@ export function Navbar() {
     setIsOpen(false);
   };
 
+  const seoNavLinks = publicNavLinks.filter((link) => !link.privateAction);
+  const actionNavLinks = publicNavLinks.filter((link) => link.privateAction);
   const allDesktopLinks = user
     ? [
-        ...publicNavLinks.slice(0, 1),
+        ...seoNavLinks,
         ...authNavLinks,
-        ...publicNavLinks.slice(1),
+        ...actionNavLinks,
       ]
-    : publicNavLinks;
+    : [...seoNavLinks, ...actionNavLinks];
 
   return (
     <>

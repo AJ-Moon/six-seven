@@ -9,6 +9,39 @@ const STORE_ADDRESS = "75 CCA, DD Block, DHA Phase 4, Lahore";
 const PHONE_TEXT = "+923246756767";
 const ORDERING_URL = `${SITE_URL}/menu`;
 
+const SITE_NAVIGATION = [
+  {
+    name: "Menu",
+    url: `${SITE_URL}/menu`,
+    description: "Six Seven burgers, fast food, coffee and drinks menu.",
+  },
+  {
+    name: "Branch Locator",
+    url: `${SITE_URL}/branches`,
+    description: "Six Seven DHA Phase 4 Lahore location and directions.",
+  },
+  {
+    name: "Contact Us",
+    url: `${SITE_URL}/contact`,
+    description: "Customer support, order help and brand inquiries.",
+  },
+  {
+    name: "About Us",
+    url: `${SITE_URL}/about`,
+    description: "Six Seven brand story and Lahore cafe positioning.",
+  },
+  {
+    name: "FAQ",
+    url: `${SITE_URL}/faq`,
+    description: "Ordering, delivery, pickup and payment questions.",
+  },
+  {
+    name: "Rewards",
+    url: `${SITE_URL}/rewards`,
+    description: "Six Seven points, loyalty and offers.",
+  },
+];
+
 const OPENING_HOURS_SPECIFICATION = [
   { dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday"], opens: "12:00", closes: "01:30" },
   { dayOfWeek: "Friday", opens: "14:00", closes: "02:30" },
@@ -366,6 +399,25 @@ export function SeoMetadata() {
       url: `${SITE_URL}/`,
       inLanguage: "en-PK",
       publisher: { "@id": `${SITE_URL}/#business` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${SITE_URL}/menu?search={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    });
+
+    setJsonLd("six-seven-site-navigation", {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "@id": `${SITE_URL}/#site-navigation`,
+      name: "Six Seven main pages",
+      itemListElement: SITE_NAVIGATION.map((item, index) => ({
+        "@type": "SiteNavigationElement",
+        position: index + 1,
+        name: item.name,
+        url: item.url,
+        description: item.description,
+      })),
     });
 
     setJsonLd("six-seven-web-page", {
