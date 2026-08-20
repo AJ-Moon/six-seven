@@ -6,11 +6,29 @@ Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoot
 
 ## Core Pages
 
-- [Home](https://sixseven.pk/): Six Seven brand homepage.
-- [Menu](https://sixseven.pk/menu): Full menu with burgers, fast food, coffee and drinks.
-- [Branch Locator](https://sixseven.pk/branches): DHA Phase 4 Lahore branch location and directions.
-- [Contact](https://sixseven.pk/contact): Customer support and inquiry page.
-- [FAQ](https://sixseven.pk/faq): Ordering, delivery, pickup and payment questions.
+- [Home](https://sixseven.pk/): Six Seven brand homepage for fast food, beef burgers, coffee and late-night ordering in DHA Phase 4 Lahore.
+- [Menu](https://sixseven.pk/menu): Full menu with food, beef burgers, loaded fries, wraps, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees.
+- [Branch Locator](https://sixseven.pk/branches): DHA Phase 4 Lahore branch location, address, delivery radius, pickup and directions.
+- [Contact](https://sixseven.pk/contact): Customer support, order help, feedback, phone and brand inquiries.
+- [FAQ](https://sixseven.pk/faq): Ordering hours, delivery radius, pickup, cash on delivery, card on delivery and online transfer questions.
+- [About](https://sixseven.pk/about): Brand story and positioning for Six Seven in Lahore.
+- [Rewards](https://sixseven.pk/rewards): Points, loyalty and offers for Six Seven customers.
+- [Careers](https://sixseven.pk/careers): Restaurant and cafe job opportunities in Lahore.
+- [Franchise](https://sixseven.pk/franchise): Franchise, partnership and brand growth inquiries.
+- [Privacy Policy](https://sixseven.pk/privacy): Customer data and ordering privacy information.
+- [Terms](https://sixseven.pk/terms): Online ordering, pickup, delivery and payment terms.
+
+## Page Keywords
+
+- Home: Six Seven, 67 Six Seven, sixseven.pk, fast food Lahore, beef burger Lahore, coffee Lahore, DHA Phase 4 Lahore food, late night food Lahore.
+- Menu: Six Seven menu, burgers Lahore, beef burger Lahore, loaded fries Lahore, wraps Lahore, iced tea Lahore, smoothies Lahore, frappes Lahore, iced coffee Lahore, hot coffee Lahore.
+- Branches: Six Seven branch, Six Seven DHA Phase 4, 75 CCA DD Block DHA Phase 4, DHA Phase 4 restaurants, fast food delivery DHA Lahore.
+- Contact: Six Seven contact, Six Seven phone number, DHA Phase 4 food delivery, customer support Lahore.
+- FAQ: Six Seven delivery radius, Six Seven timings, Six Seven payment options, cash on delivery Lahore restaurant, pickup order Lahore.
+- About: Six Seven Lahore brand, Lahore cafe, fast food cafe Lahore, Good Food Good Coffee Good Mood.
+- Rewards: Six Seven rewards, Six Seven points, restaurant loyalty Lahore, fast food deals Lahore.
+- Careers: Six Seven careers, restaurant jobs Lahore, cafe jobs Lahore, fast food jobs Lahore.
+- Franchise: Six Seven franchise, restaurant franchise Lahore, fast food franchise Pakistan, cafe partnership Lahore.
 
 ## Business Details
 

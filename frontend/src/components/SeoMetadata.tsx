@@ -17,10 +17,16 @@ const OPENING_HOURS_SPECIFICATION = [
 ];
 
 const MENU_KEYWORDS = [
+  "Six Seven Lahore",
+  "sixseven.pk",
   "fast food Lahore",
   "beef burger Lahore",
+  "burger near me Lahore",
+  "fast food near me Lahore",
   "burgers near DHA Phase 4",
+  "DHA Phase 4 restaurants",
   "coffee Lahore",
+  "coffee near me Lahore",
   "iced coffee Lahore",
   "iced tea Lahore",
   "smoothies Lahore",
@@ -29,74 +35,231 @@ const MENU_KEYWORDS = [
   "wraps Lahore",
 ];
 
-const ROUTE_META: Record<
-  string,
-  {
-    title: string;
-    description: string;
-    index?: boolean;
-  }
-> = {
+type RouteMeta = {
+  title: string;
+  description: string;
+  keywords: string[];
+  pageType?: string;
+  index?: boolean;
+};
+
+const ROUTE_META: Record<string, RouteMeta> = {
   "/": {
     title: "Six Seven | Fast Food, Beef Burgers & Coffee in DHA Lahore",
     description:
       "Order Six Seven burgers, fast food, specialty coffee, iced teas, smoothies and frappes from DHA Phase 4 Lahore for delivery or pickup.",
+    keywords: [
+      "Six Seven",
+      "67 Six Seven",
+      "sixseven.pk",
+      "fast food Lahore",
+      "beef burger Lahore",
+      "coffee Lahore",
+      "DHA Phase 4 Lahore food",
+      "late night food Lahore",
+      "online food ordering Lahore",
+    ],
+    pageType: "WebPage",
   },
   "/menu": {
     title: "Six Seven Menu | Burgers, Fast Food, Coffee & Drinks Lahore",
     description:
       "Explore the Six Seven menu: beef burgers, loaded snacks, signature drinks, iced teas, smoothies, frappes, iced coffee and hot coffee.",
+    keywords: [
+      "Six Seven menu",
+      "sixseven.pk menu",
+      "burgers Lahore menu",
+      "beef burger Lahore",
+      "loaded fries Lahore",
+      "wraps Lahore",
+      "signature drinks Lahore",
+      "iced tea Lahore",
+      "smoothies Lahore",
+      "frappes Lahore",
+      "iced coffee Lahore",
+      "hot coffee Lahore",
+    ],
+    pageType: "CollectionPage",
   },
   "/branches": {
     title: "Six Seven Branch Locator | DHA Phase 4 Lahore",
     description:
       "Find the Six Seven branch at 75 CCA, DD Block, DHA Phase 4 Lahore with directions, timings, pickup and delivery details.",
+    keywords: [
+      "Six Seven branch",
+      "Six Seven location",
+      "Six Seven DHA Phase 4",
+      "75 CCA DD Block DHA Phase 4",
+      "DHA Phase 4 restaurants",
+      "branch locator Lahore",
+      "fast food delivery DHA Lahore",
+    ],
+    pageType: "WebPage",
   },
   "/contact": {
     title: "Contact Six Seven | DHA Phase 4 Lahore",
     description:
       "Contact Six Seven Lahore for orders, delivery help, pickup details, feedback and brand inquiries.",
+    keywords: [
+      "Six Seven contact",
+      "Six Seven phone number",
+      "contact fast food Lahore",
+      "DHA Phase 4 food delivery",
+      "Six Seven customer support",
+    ],
+    pageType: "ContactPage",
   },
   "/faq": {
     title: "Six Seven FAQ | Ordering, Delivery, Pickup & Payments",
     description:
       "Answers about Six Seven ordering hours, delivery radius, pickup, payment options and the DHA Phase 4 Lahore branch.",
+    keywords: [
+      "Six Seven FAQ",
+      "Six Seven delivery radius",
+      "Six Seven payment options",
+      "cash on delivery Lahore restaurant",
+      "card on delivery Lahore",
+      "pickup order Lahore",
+      "Six Seven timings",
+    ],
+    pageType: "FAQPage",
   },
   "/about": {
     title: "About Six Seven | Good Food, Good Coffee, Good Mood",
     description:
       "Learn about Six Seven, a Lahore cafe and fast food brand serving burgers, loaded snacks, coffee and signature drinks.",
+    keywords: [
+      "About Six Seven",
+      "Six Seven Lahore brand",
+      "Lahore cafe",
+      "fast food cafe Lahore",
+      "Good Food Good Coffee Good Mood",
+      "burger and coffee Lahore",
+    ],
+    pageType: "AboutPage",
   },
   "/privacy": {
     title: "Privacy Policy | Six Seven",
     description:
       "Read how Six Seven handles customer information for online orders, delivery, pickup and support.",
+    keywords: [
+      "Six Seven privacy policy",
+      "sixseven.pk privacy",
+      "online ordering privacy Lahore",
+      "restaurant customer data policy",
+    ],
+    pageType: "WebPage",
   },
   "/terms": {
     title: "Terms of Service | Six Seven",
     description:
       "Read Six Seven terms for online ordering, item availability, delivery radius, pickup and payments.",
+    keywords: [
+      "Six Seven terms",
+      "sixseven.pk terms",
+      "online food ordering terms",
+      "delivery radius policy Lahore",
+      "pickup payment terms",
+    ],
+    pageType: "WebPage",
   },
   "/rewards": {
     title: "Six Seven Rewards | Points & Offers",
     description:
       "Earn rewards and offers when ordering from Six Seven Lahore.",
+    keywords: [
+      "Six Seven rewards",
+      "Six Seven points",
+      "restaurant loyalty Lahore",
+      "fast food deals Lahore",
+      "Six Seven offers",
+    ],
+    pageType: "WebPage",
   },
   "/track": {
     title: "Track Your Six Seven Order",
     description:
       "Track your Six Seven delivery or pickup order status online.",
+    keywords: [
+      "track Six Seven order",
+      "Six Seven order status",
+      "track food delivery Lahore",
+    ],
     index: false,
   },
   "/careers": {
     title: "Careers at Six Seven Lahore",
     description:
       "Explore opportunities to work with Six Seven in Lahore.",
+    keywords: [
+      "Six Seven careers",
+      "restaurant jobs Lahore",
+      "cafe jobs Lahore",
+      "fast food jobs Lahore",
+      "DHA Lahore restaurant careers",
+    ],
+    pageType: "WebPage",
   },
   "/franchise": {
     title: "Six Seven Franchise & Partnership Inquiries",
     description:
       "Contact Six Seven for franchise, partnership and brand growth inquiries.",
+    keywords: [
+      "Six Seven franchise",
+      "restaurant franchise Lahore",
+      "fast food franchise Pakistan",
+      "cafe partnership Lahore",
+      "Six Seven partnership",
+    ],
+    pageType: "WebPage",
+  },
+  "/cart": {
+    title: "Your Cart | Six Seven",
+    description: "Review your Six Seven order before checkout.",
+    keywords: ["Six Seven cart", "online food cart", "Lahore food order"],
+    index: false,
+  },
+  "/checkout": {
+    title: "Checkout | Six Seven",
+    description: "Place a Six Seven pickup or delivery order from Lahore.",
+    keywords: ["Six Seven checkout", "food delivery checkout Lahore", "pickup order Lahore"],
+    index: false,
+  },
+  "/history": {
+    title: "Order History | Six Seven",
+    description: "View your previous Six Seven orders.",
+    keywords: ["Six Seven order history", "previous food orders", "reorder Six Seven"],
+    index: false,
+  },
+  "/login": {
+    title: "Login | Six Seven",
+    description: "Sign in to your Six Seven account.",
+    keywords: ["Six Seven login", "Six Seven account", "restaurant account Lahore"],
+    index: false,
+  },
+  "/points": {
+    title: "Points | Six Seven",
+    description: "Check your Six Seven reward points.",
+    keywords: ["Six Seven points", "Six Seven rewards account", "restaurant points Lahore"],
+    index: false,
+  },
+  "/profile": {
+    title: "Profile | Six Seven",
+    description: "Manage your Six Seven account profile.",
+    keywords: ["Six Seven profile", "Six Seven account settings"],
+    index: false,
+  },
+  "/claim-order": {
+    title: "Claim Order | Six Seven",
+    description: "Claim a Six Seven order in your account.",
+    keywords: ["claim Six Seven order", "Six Seven order account"],
+    index: false,
+  },
+  "/restaurant-not-found": {
+    title: "Restaurant Not Found | Six Seven",
+    description: "The requested Six Seven restaurant page could not be found.",
+    keywords: ["Six Seven restaurant not found", "Six Seven Lahore"],
+    index: false,
   },
 };
 
@@ -143,6 +306,15 @@ function setJsonLd(id: string, value: object) {
   tag.text = JSON.stringify(value);
 }
 
+function removeJsonLd(id: string) {
+  document.getElementById(id)?.remove();
+}
+
+function pageLabel(pathname: string, meta: RouteMeta) {
+  if (pathname === "/") return BRAND_NAME;
+  return meta.title.split("|")[0].trim();
+}
+
 function pageMeta(pathname: string) {
   if (ROUTE_META[pathname]) return ROUTE_META[pathname];
   if (pathname.startsWith("/menu")) return ROUTE_META["/menu"];
@@ -150,6 +322,7 @@ function pageMeta(pathname: string) {
     title: "Six Seven | Fast Food, Burgers & Coffee in Lahore",
     description:
       "Six Seven serves fast food, beef burgers, specialty coffee and signature drinks in DHA Phase 4 Lahore.",
+    keywords: MENU_KEYWORDS,
     index: false,
   };
 }
@@ -167,10 +340,13 @@ export function SeoMetadata() {
 
     document.title = meta.title;
     setMeta("description", meta.description);
+    setMeta("keywords", meta.keywords.join(", "));
+    setMeta("author", BRAND_NAME);
     setMeta("robots", shouldIndex ? "index,follow" : "noindex,follow");
     setLink("canonical", canonical);
 
     setMeta("og:site_name", BRAND_NAME, "property");
+    setMeta("og:locale", "en_PK", "property");
     setMeta("og:type", "website", "property");
     setMeta("og:title", meta.title, "property");
     setMeta("og:description", meta.description, "property");
@@ -180,6 +356,32 @@ export function SeoMetadata() {
     setMeta("twitter:title", meta.title);
     setMeta("twitter:description", meta.description);
     setMeta("twitter:image", DEFAULT_IMAGE);
+
+    setJsonLd("six-seven-website", {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: BRAND_NAME,
+      alternateName: ["67", "67 - Six Seven", "sixseven.pk"],
+      url: `${SITE_URL}/`,
+      inLanguage: "en-PK",
+      publisher: { "@id": `${SITE_URL}/#business` },
+    });
+
+    setJsonLd("six-seven-web-page", {
+      "@context": "https://schema.org",
+      "@type": meta.pageType || "WebPage",
+      "@id": `${canonical}#webpage`,
+      url: canonical,
+      name: pageLabel(pathname, meta),
+      headline: meta.title,
+      description: meta.description,
+      keywords: meta.keywords.join(", "),
+      inLanguage: "en-PK",
+      isPartOf: { "@id": `${SITE_URL}/#website` },
+      about: { "@id": `${SITE_URL}/#business` },
+      publisher: { "@id": `${SITE_URL}/#business` },
+    });
 
     setJsonLd("six-seven-local-business", {
       "@context": "https://schema.org",
@@ -298,21 +500,58 @@ export function SeoMetadata() {
         ],
       });
     } else {
-      document.getElementById("six-seven-faq")?.remove();
+      removeJsonLd("six-seven-faq");
     }
 
     if (pathname === "/menu") {
       setJsonLd("six-seven-menu-page", {
         "@context": "https://schema.org",
         "@type": "Menu",
+        "@id": `${SITE_URL}/menu#menu`,
         name: "Six Seven Menu",
         url: `${SITE_URL}/menu`,
         provider: { "@id": `${SITE_URL}/#business` },
         description:
           "Burgers, fast food, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees from Six Seven Lahore.",
+        hasMenuSection: [
+          "Food",
+          "Signature Drinks",
+          "Iced Teas",
+          "Smoothies",
+          "Frappes",
+          "Iced Coffees",
+          "Hot Coffees",
+        ].map((name) => ({
+          "@type": "MenuSection",
+          name,
+          url: `${SITE_URL}/menu`,
+        })),
       });
     } else {
-      document.getElementById("six-seven-menu-page")?.remove();
+      removeJsonLd("six-seven-menu-page");
+    }
+
+    if (shouldIndex && canonicalPath !== "/") {
+      setJsonLd("six-seven-breadcrumbs", {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: `${SITE_URL}/`,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: pageLabel(pathname, meta),
+            item: canonical,
+          },
+        ],
+      });
+    } else {
+      removeJsonLd("six-seven-breadcrumbs");
     }
   }, [pathname]);
 
