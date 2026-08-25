@@ -2,6 +2,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { HeroSlider } from "@/components/home/hero-slider"
 import { QuickActions } from "@/components/home/quick-actions"
+import { SearchIntentSection } from "@/components/home/search-intent-section"
 import { MenuCategories } from "@/components/home/menu-categories"
 import { FeaturedItems } from "@/components/home/featured-items"
 import { DealsSection } from "@/components/home/deals-section"
@@ -18,6 +19,7 @@ export default function HomePage() {
           <ExperimentText placement="HOME_PROMO_COPY" fallback="Order fresh favorites online." />
         </div>
         <QuickActions />
+        <SearchIntentSection />
         <MenuCategories />
         <FeaturedItems />
         <DealsSection />

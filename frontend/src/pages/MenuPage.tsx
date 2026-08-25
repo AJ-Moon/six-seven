@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Navbar } from "@/components/navbar";
@@ -55,14 +55,32 @@ export default function MenuPage() {
   const { addItem } = useCart();
   const { restaurantName, menuSubtitle } = useRestaurant();
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeCategory, setActiveCategory] = useState(
+    () => searchParams.get("category") || "all",
+  );
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParams.get("search") || "",
+  );
   const [priceRange, setPriceRange] = useState([0, 9999]);
-  const [sortBy, setSortBy] = useState("popular");
+  const [sortBy, setSortBy] = useState(
+    () => searchParams.get("sort") || "popular",
+  );
   const [showFilters, setShowFilters] = useState(false);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const lastTrackedResultKey = useRef("");
+
+  useEffect(() => {
+    const nextCategory = searchParams.get("category") || "all";
+    const nextSearch = searchParams.get("search") || "";
+    const nextSort = searchParams.get("sort") || "popular";
+    setActiveCategory((current) =>
+      current === nextCategory ? current : nextCategory,
+    );
+    setSearchQuery((current) => (current === nextSearch ? current : nextSearch));
+    setSortBy((current) => (current === nextSort ? current : nextSort));
+  }, [searchParams]);
 
   const {
     data: rawCategories,
@@ -85,13 +103,21 @@ export default function MenuPage() {
     ...(rawCategories ?? []).map((c) => ({ id: c, name: toTitle(c) })),
   ];
 
-  const params = new URLSearchParams();
-  if (activeCategory !== "all") params.set("category", activeCategory);
-  if (debouncedSearch) params.set("search", debouncedSearch);
-  if (sortBy !== "popular") params.set("sort", sortBy);
+  const menuParams = new URLSearchParams();
+  if (activeCategory !== "all") menuParams.set("category", activeCategory);
+  if (debouncedSearch) menuParams.set("search", debouncedSearch);
+  if (sortBy !== "popular") menuParams.set("sort", sortBy);
 
-  const menuPath = params.toString()
-    ? `/api/menu?${params.toString()}`
+  useEffect(() => {
+    const nextParams = new URLSearchParams();
+    if (activeCategory !== "all") nextParams.set("category", activeCategory);
+    if (debouncedSearch) nextParams.set("search", debouncedSearch);
+    if (sortBy !== "popular") nextParams.set("sort", sortBy);
+    setSearchParams(nextParams, { replace: true });
+  }, [activeCategory, debouncedSearch, sortBy, setSearchParams]);
+
+  const menuPath = menuParams.toString()
+    ? `/api/menu?${menuParams.toString()}`
     : "/api/menu";
 
   const {
