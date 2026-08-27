@@ -343,7 +343,8 @@ def main() -> None:
             )
             cur.execute(
                 "DELETE FROM menu_items WHERE restaurant_id = %s AND NOT (id = ANY(%s)) "
-                "AND id NOT IN (SELECT DISTINCT menu_item_id FROM order_line_items WHERE menu_item_id IS NOT NULL)",
+                "AND id NOT IN (SELECT DISTINCT menu_item_id FROM order_line_items WHERE menu_item_id IS NOT NULL) "
+                "AND id NOT IN (SELECT DISTINCT menu_item_id FROM cart_lines WHERE menu_item_id IS NOT NULL)",
                 (RID, list(keep)),
             )
 
