@@ -125,7 +125,18 @@ SANDWICH_TOPPINGS = group(
 )
 KIDS_SAUCE = group("kids-sauce", "Sauce", [option("mayo", "Mayo"), option("ketchup", "Ketchup")], required=True)
 KIDS_MEAL = group("kids-meal", "Kids meal", [option("kids-meal", "Add fries + kids drink", 400)])
-SWEET_BASE = group("base", "Choose a base", [option("mini-pancakes", "Mini pancakes"), option("waffle", "Waffle")], required=True)
+FLAVOUR_OPTIONS = group(
+    "flavour",
+    "Choose a Flavour",
+    [
+        option("chocolate-drip", "Chocolate Drip", 0, "Finished with warm chocolate"),
+        option("oreo-crunch", "Oreo Crunch", 40, "Loaded with chocolate and Oreo crunch"),
+        option("dairy-desire", "Dairy Desire", 140, "Creamy dairy-style topping"),
+        option("kitkat-crunch", "KitKat Crunch", 140, "Loaded with chocolate and KitKat crunch"),
+        option("kinder-bueno", "Kinder Bueno", 440, "Loaded with Kinder Bueno"),
+    ],
+    required=True,
+)
 ICE_CREAM_ADDON = group(
     "ice-cream",
     "Vanilla ice cream",
@@ -141,7 +152,7 @@ def size_group(options: list[dict]) -> dict:
 CHICKEN_BURGER_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, MEAL_UPGRADE, MEAL_FRIES]
 BEEF_STACK_OPTIONS = [BEEF_TOPPINGS, MEAL_UPGRADE, MEAL_FRIES]
 CHICKEN_WRAP_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, MEAL_UPGRADE, MEAL_FRIES]
-SWEET_OPTIONS = [SWEET_BASE, ICE_CREAM_ADDON, EXTRA_SWEET_SAUCE]
+SWEET_OPTIONS = [FLAVOUR_OPTIONS, ICE_CREAM_ADDON, EXTRA_SWEET_SAUCE]
 
 
 def menu_item(
@@ -198,11 +209,8 @@ MENU = [
     menu_item("Little 6-7", "For Kids Under 12", "Mini Chicken Dog", 530, "Crispy chicken strips, iceberg and mayo or ketchup.", "mini-chicken-dog", customizations=[KIDS_SAUCE, KIDS_MEAL]),
     menu_item("Little 6-7", "For Kids Under 12", "6-Piece Chicken Nuggets", 530, "Six crispy golden nuggets with mayo or ketchup.", "chicken-nuggets", customizations=[KIDS_SAUCE, KIDS_MEAL]),
     menu_item("Little 6-7", "For Kids Under 12", "3-Piece Kids Tenders", 530, "Three crispy tenders with mayo or ketchup.", "kids-tenders", customizations=[KIDS_SAUCE, KIDS_MEAL]),
-    menu_item("Sweet Side", "Choose. Load. Love.", "Chocolate Drip", 530, "Mini pancakes or waffle finished with warm chocolate.", "chocolate-drip", customizations=SWEET_OPTIONS),
-    menu_item("Sweet Side", "Choose. Load. Love.", "Dairy Desire", 670, "Mini pancakes or waffle with a creamy dairy-style topping.", "dairy-desire", customizations=SWEET_OPTIONS),
-    menu_item("Sweet Side", "Choose. Load. Love.", "Oreo Crunch", 570, "Mini pancakes or waffle loaded with chocolate and Oreo crunch.", "oreo-crunch", popular=True, customizations=SWEET_OPTIONS),
-    menu_item("Sweet Side", "Choose. Load. Love.", "KitKat Crunch", 670, "Mini pancakes or waffle loaded with chocolate and KitKat crunch.", "kitkat-crunch", customizations=SWEET_OPTIONS),
-    menu_item("Sweet Side", "Choose. Load. Love.", "Kinder Bueno", 970, "Mini pancakes or waffle loaded with Kinder Bueno.", "kinder-bueno", featured=True, customizations=SWEET_OPTIONS),
+    menu_item("Sweet Side", "Choose. Load. Love.", "Mini Pancakes", 530, "Warm mini pancakes finished with your choice of flavour: Chocolate Drip, Dairy Desire, Oreo Crunch, KitKat Crunch or Kinder Bueno.", "mini-pancakes", popular=True, customizations=SWEET_OPTIONS),
+    menu_item("Sweet Side", "Choose. Load. Love.", "Waffle", 530, "A crisp waffle finished with your choice of flavour: Chocolate Drip, Dairy Desire, Oreo Crunch, KitKat Crunch or Kinder Bueno.", "waffle", customizations=SWEET_OPTIONS),
 
     menu_item("Signature Drinks", "Signature Drinks", "Peach Breeze", 550, "Peach, citrus and soda over crushed ice.", "peach-breeze", popular=True, featured=True),
     menu_item("Signature Drinks", "Signature Drinks", "Strawberry Rush", 550, "Strawberry and soda layered over ice.", "strawberry-rush", popular=True),
