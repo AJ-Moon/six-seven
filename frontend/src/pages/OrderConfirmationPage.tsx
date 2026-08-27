@@ -6,11 +6,14 @@ import { CheckCircle2, ShoppingBag, MapPin, Clock, Star } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { formatMoney } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payment";
+import { formatCustomizationText } from "@/lib/customizations";
+import type { SelectedCustomization } from "@/types/menu";
 
 interface OrderItem {
   name: string
   quantity: number
   price: number
+  customizations?: SelectedCustomization[]
 }
 
 interface Order {
@@ -66,8 +69,15 @@ export default function OrderConfirmationPage() {
                 <h2 className="mb-3 font-semibold text-foreground">Order Summary</h2>
                 <div className="space-y-2 text-sm">
                   {order.items.map((item, i) => (
-                    <div key={i} className="flex justify-between text-muted-foreground">
-                      <span>{item.name} × {item.quantity}</span>
+                    <div key={i} className="flex justify-between gap-3 text-muted-foreground">
+                      <span>
+                        {item.name} × {item.quantity}
+                        {item.customizations?.length ? (
+                          <span className="mt-0.5 block text-xs">
+                            {formatCustomizationText(item.customizations)}
+                          </span>
+                        ) : null}
+                      </span>
                       <span>{formatMoney((item.price * item.quantity))}</span>
                     </div>
                   ))}

@@ -16,6 +16,8 @@ import { Search, CheckCircle2, ChefHat, Package, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { formatMoney } from "@/lib/money";
+import { formatCustomizationText } from "@/lib/customizations";
+import type { SelectedCustomization } from "@/types/menu";
 
 const statusSteps = [
   { label: "Received", icon: CheckCircle2, key: "received" },
@@ -40,7 +42,7 @@ function normalizeTrackStatus(
   return "received";
 }
 
-type OrderItem = { name: string; quantity: number; price: number };
+type OrderItem = { name: string; quantity: number; price: number; customizations?: SelectedCustomization[] };
 type Order = {
   id: string;
   status: string;
@@ -404,6 +406,11 @@ export default function TrackPage() {
                           <p className="text-sm text-muted-foreground">
                             Qty: {item.quantity}
                           </p>
+                          {item.customizations?.length ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {formatCustomizationText(item.customizations)}
+                            </p>
+                          ) : null}
                         </div>
                         <p className="font-medium">
                           {formatMoney((item.price * item.quantity))}

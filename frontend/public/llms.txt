@@ -2,12 +2,12 @@
 
 > Six Seven is a fast food and coffee brand in DHA Phase 4 Lahore, Pakistan.
 
-Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees. Customers can order online for delivery or pickup from the DHA Phase 4 Lahore branch.
+Six Seven serves Mighty Zinger chicken burgers, Australian beef burgers, chicken tenders, loaded chicken fries, wraps, grilled sandwiches, fresh salads, kids meals, mini pancakes, waffles, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees. Customers can order online for delivery or pickup from the DHA Phase 4 Lahore branch.
 
 ## Core Pages
 
 - [Home](https://sixseven.pk/): Six Seven brand homepage for fast food, beef burgers, coffee and late-night ordering in DHA Phase 4 Lahore.
-- [Menu](https://sixseven.pk/menu): Full menu with food, beef burgers, loaded fries, wraps, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees.
+- [Menu](https://sixseven.pk/menu): Full menu with Mighty Zinger, Australian beef burgers, chicken tenders, loaded fries, wraps, grilled sandwiches, salads, kids meals, waffles, mini pancakes, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees.
 - [Branch Locator](https://sixseven.pk/branches): DHA Phase 4 Lahore branch location, address, delivery radius, pickup and directions.
 - [Contact](https://sixseven.pk/contact): Customer support, order help, feedback, phone and brand inquiries.
 - [FAQ](https://sixseven.pk/faq): Ordering hours, delivery radius, pickup, cash on delivery, card on delivery and online transfer questions.
@@ -21,7 +21,7 @@ Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoot
 ## Page Keywords
 
 - Home: Six Seven, 67 Six Seven, Six Seven Lahore, sixseven.pk, fast food near me, coffee near me, beef burger near me, DHA Phase 4 Lahore food, DHA Phase 4 restaurants, late night food Lahore.
-- Menu: Six Seven menu, burgers Lahore, beef burger Lahore, beef burger near me, loaded fries Lahore, wraps near me, iced tea Lahore, smoothies Lahore, frappes Lahore, iced coffee Lahore, cold coffee near me, hot coffee Lahore.
+- Menu: Six Seven menu, Six Seven food menu, Mighty Zinger Lahore, zinger burger Lahore, Australian beef burger Lahore, beef burger near me, chicken tenders Lahore, loaded chicken fries Lahore, wraps near me, grilled sandwich Lahore, kids meal Lahore, mini pancakes Lahore, waffles Lahore, iced tea Lahore, smoothies Lahore, frappes Lahore, iced coffee Lahore, cold coffee near me, hot coffee Lahore.
 - Branches: Six Seven branch, Six Seven DHA Phase 4, 75 CCA DD Block DHA Phase 4, DHA Phase 4 restaurants, fast food delivery DHA Lahore.
 - Contact: Six Seven contact, Six Seven phone number, DHA Phase 4 food delivery, customer support Lahore.
 - FAQ: Six Seven delivery radius, Six Seven timings, Six Seven payment options, cash on delivery Lahore restaurant, pickup order Lahore.
@@ -38,7 +38,7 @@ Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoot
 - Facebook: [Six Seven](https://facebook.com/sixseven.pk)
 - Address: 75 CCA, DD Block, DHA Phase 4, Lahore, Pakistan
 - Service area: Lahore
-- Cuisine: Fast food, beef burgers, coffee, iced teas, smoothies, frappes
+- Cuisine: Fast food, chicken burgers, beef burgers, chicken tenders, wraps, loaded fries, coffee, iced teas, smoothies, frappes
 - Ordering: Delivery and pickup
 - Phone: +92 324 6756767
 - Hours: Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM, Sunday 5 PM-1:30 AM
@@ -46,7 +46,10 @@ Six Seven serves beef burgers, loaded snacks, signature drinks, iced teas, smoot
 
 ## Menu Highlights
 
-- Food: beef burgers, wraps, loaded fries, fries, cheese balls, chicken strips, waffles, mini pancakes and combo meals.
+- Burgers: Mighty Zinger, Mighty Double Zinger, grilled chicken burgers, Single Stack, Double Stack, Triple Stack, Mushroom Melt and Smoky Barbecue Melt.
+- Chicken and sides: Golden Tenders, Cheesy Tenders, Fully Loaded Chicken Fries, Classic Fries, 6-7 Masala Fries, Saucy Fries, Cheesy Fries and Curly Fries.
+- Wraps and sandwiches: Crispy Chicken Wrap, Grilled Chicken Wrap, Tikka Grilled Sandwich and Fajita Grilled Sandwich.
+- Salads, kids and sweets: Grilled Chicken Salad, Creamy Russian Salad, Mini Chicken Dog, 6-Piece Chicken Nuggets, 3-Piece Kids Tenders, Chocolate Drip, Dairy Desire, Oreo Crunch, KitKat Crunch and Kinder Bueno.
 - Signature drinks: strawberry rush, mango burst, peach breeze, berry cola and signature refreshers.
 - Iced teas: peach iced tea, strawberry iced tea and passion fruit iced tea.
 - Smoothies and frappes: mango smoothie, strawberry smoothie, blackberry smoothie, mocha frappe, caramel frappe and pistachio frappe.

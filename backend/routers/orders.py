@@ -5,7 +5,7 @@ from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from db import get_db
 from dependencies.auth import get_current_user, get_optional_current_user, get_restaurant_id, TokenData
@@ -39,6 +39,7 @@ class OrderItem(BaseModel):
     name: str = ""
     price: float = 0
     category: Optional[str] = ""
+    customizations: List[dict] = Field(default_factory=list)
 
 
 class CreateOrderRequest(BaseModel):
@@ -201,7 +202,14 @@ def create_order(
             priced_lines = price_menu_lines(
                 cur,
                 restaurant_id,
-                [RequestedLine(menu_item_id=item.menuItemId, quantity=item.quantity) for item in body.items],
+                [
+                    RequestedLine(
+                        menu_item_id=item.menuItemId,
+                        quantity=item.quantity,
+                        customizations=tuple(item.customizations),
+                    )
+                    for item in body.items
+                ],
             )
             currency = priced_lines[0].currency
             subtotal_cents = sum(line.line_revenue_cents for line in priced_lines)

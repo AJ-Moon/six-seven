@@ -15,6 +15,7 @@ router = APIRouter()
 class CartLineInput(BaseModel):
     menuItemId: int
     quantity: int = Field(ge=1, le=99)
+    customizations: list[dict] = Field(default_factory=list)
 
 
 class CartSyncRequest(BaseModel):
@@ -45,7 +46,14 @@ def sync_cart(
             lines = price_menu_lines(
                 cur,
                 tenant.id,
-                [RequestedLine(menu_item_id=item.menuItemId, quantity=item.quantity) for item in body.items],
+                [
+                    RequestedLine(
+                        menu_item_id=item.menuItemId,
+                        quantity=item.quantity,
+                        customizations=tuple(item.customizations),
+                    )
+                    for item in body.items
+                ],
             )
             customer_id = None
             if user:

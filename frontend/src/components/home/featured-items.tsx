@@ -11,6 +11,7 @@ import { fetchJsonWithRetry } from "@/lib/api";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { formatMoney } from "@/lib/money";
 import { srcSetFor } from "@/lib/images";
+import type { MenuCustomizationGroup } from "@/types/menu";
 
 type MenuItem = {
   id: number;
@@ -22,6 +23,7 @@ type MenuItem = {
   isSpicy: boolean;
   isPopular: boolean;
   isFeatured?: boolean;
+  customizations?: MenuCustomizationGroup[];
 };
 
 export function FeaturedItems() {
@@ -180,6 +182,17 @@ export function FeaturedItems() {
                   size="icon"
                   className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-primary text-primary-foreground opacity-0 shadow-lg transition-all duration-300 hover:scale-110 hover:bg-primary/90 group-hover:opacity-100"
                   onClick={() => {
+                    if (item.customizations?.length) {
+                      toast.message("Choose your options on the menu page", {
+                        description: item.name,
+                        action: {
+                          label: "Open",
+                          onClick: () => navigate(`/menu?search=${encodeURIComponent(item.name)}`),
+                        },
+                      });
+                      navigate(`/menu?search=${encodeURIComponent(item.name)}`);
+                      return;
+                    }
                     const finalPrice =
                       item.salePrice != null && item.salePrice < item.price
                         ? item.salePrice

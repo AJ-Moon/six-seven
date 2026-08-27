@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Load the real Six Seven Cafe menu, branding and store settings.
+"""Load Six Seven's current menu, branding and store settings.
 
-Transcribed from the printed menu (Menu images/Menu.png). Prices are Pakistani
-Rupees, stored as price_cents = rupees * 100 so the existing money helpers keep
-working unchanged. Re-running this is safe: menu rows are matched on
-(restaurant_id, name) and updated in place.
+Food menu content is transcribed from Pricing.docx. Prices are Pakistani Rupees,
+stored as price_cents = rupees * 100 so the existing money helpers keep working.
+Re-running this is safe: menu rows are matched on (restaurant_id, name).
 """
 import os
 import sys
@@ -21,67 +20,222 @@ from db import get_db  # noqa: E402
 RID = int(os.getenv("DEFAULT_RESTAURANT_ID", "1"))
 IMG = "/static/uploads"
 
-# (category, name, price_rs, description, image_slug, popular, featured)
+
+def option(option_id: str, name: str, price_rs: int = 0, description: str = "", image: str = "") -> dict:
+    row = {
+        "id": option_id,
+        "name": name,
+        "priceDeltaCents": price_rs * 100,
+    }
+    if description:
+        row["description"] = description
+    if image:
+        row["image"] = image
+    return row
+
+
+def group(
+    group_id: str,
+    name: str,
+    options: list[dict],
+    *,
+    required: bool = False,
+    min_selections: int | None = None,
+    max_selections: int | None = None,
+    allow_repeats: bool = False,
+    depends_on: dict | None = None,
+) -> dict:
+    row = {
+        "id": group_id,
+        "name": name,
+        "required": required,
+        "minSelections": min_selections if min_selections is not None else (1 if required else 0),
+        "maxSelections": max_selections if max_selections is not None else (1 if required else len(options)),
+        "allowRepeats": allow_repeats,
+        "options": options,
+    }
+    if depends_on:
+        row["dependsOn"] = depends_on
+    return row
+
+
+SAUCE_OPTIONS = [
+    option("garlic-mayo", "Garlic Mayo", description="Creamy and mellow"),
+    option("chipotle", "Chipotle", description="Smoky and mild"),
+    option("atomic", "Atomic", description="Blazing hot"),
+    option("six-seven-special", "67 Special", description="Tangy house blend"),
+]
+
+PICK_TWO_SAUCES = group(
+    "sauces",
+    "Pick 2 sauces",
+    SAUCE_OPTIONS,
+    required=True,
+    min_selections=2,
+    max_selections=2,
+    allow_repeats=True,
+)
+PICK_ONE_SAUCE = group("sauce", "Pick 1 sauce", SAUCE_OPTIONS, required=True)
+OPTIONAL_JALAPENOS = group("jalapenos", "Jalapenos", [option("jalapenos", "Add jalapenos")])
+CHEESE_ADDON = group("cheese", "Cheese", [option("cheese", "Add cheese", 130)])
+BEEF_TOPPINGS = group(
+    "toppings",
+    "Free toppings",
+    [
+        option("lettuce", "Lettuce"),
+        option("pickles", "Pickles"),
+        option("jalapenos", "Jalapenos"),
+        option("onion", "Onion"),
+        option("tomato", "Tomato"),
+    ],
+    max_selections=5,
+)
+FRIED_EGG = group("fried-egg", "Fried egg", [option("fried-egg", "Add fried egg", 100)])
+MEAL_UPGRADE = group(
+    "meal",
+    "Make it a meal",
+    [
+        option(
+            "make-meal",
+            "Add fries + signature drink",
+            630,
+            "Drink choice will be confirmed by Six Seven until the drinks menu is updated.",
+            f"{IMG}/meal-upgrade.webp",
+        )
+    ],
+)
+MEAL_FRIES = group(
+    "meal-fries",
+    "Meal fries",
+    [option("plain-fries", "Plain fries"), option("masala-fries", "6-7 masala fries")],
+    required=True,
+    depends_on={"groupId": "meal", "optionId": "make-meal"},
+)
+BREAD_CHOICE = group(
+    "bread",
+    "Bread",
+    [option("white", "White bread"), option("bran", "Bran bread")],
+    required=True,
+)
+SANDWICH_TOPPINGS = group(
+    "sandwich-toppings",
+    "Free extras",
+    [option("pickles", "Pickles"), option("jalapenos", "Jalapenos")],
+    max_selections=2,
+)
+KIDS_SAUCE = group("kids-sauce", "Sauce", [option("mayo", "Mayo"), option("ketchup", "Ketchup")], required=True)
+KIDS_MEAL = group("kids-meal", "Kids meal", [option("kids-meal", "Add fries + kids drink", 400)])
+SWEET_BASE = group("base", "Choose a base", [option("mini-pancakes", "Mini pancakes"), option("waffle", "Waffle")], required=True)
+ICE_CREAM_ADDON = group(
+    "ice-cream",
+    "Vanilla ice cream",
+    [option("one-scoop", "1 scoop", 130), option("two-scoops", "2 scoops", 250)],
+)
+EXTRA_SWEET_SAUCE = group("extra-sauce", "Extra sauce dip", [option("extra-sauce", "Extra sauce dip", 130)])
+
+
+def size_group(options: list[dict]) -> dict:
+    return group("size", "Size", options, required=True)
+
+
+CHICKEN_BURGER_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, MEAL_UPGRADE, MEAL_FRIES]
+BEEF_STACK_OPTIONS = [BEEF_TOPPINGS, MEAL_UPGRADE, MEAL_FRIES]
+CHICKEN_WRAP_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, MEAL_UPGRADE, MEAL_FRIES]
+SWEET_OPTIONS = [SWEET_BASE, ICE_CREAM_ADDON, EXTRA_SWEET_SAUCE]
+
+
+def menu_item(
+    category: str,
+    subcategory: str,
+    name: str,
+    price_rs: int,
+    description: str,
+    slug: str | None,
+    *,
+    popular: bool = False,
+    featured: bool = False,
+    spicy: bool = False,
+    customizations: list[dict] | None = None,
+) -> dict:
+    return {
+        "category": category,
+        "subcategory": subcategory,
+        "name": name,
+        "price_rs": price_rs,
+        "description": description,
+        "image_slug": slug,
+        "popular": popular,
+        "featured": featured,
+        "spicy": spicy,
+        "customizations": customizations or [],
+    }
+
+
 MENU = [
-    # ── Coffee ───────────────────────────────────────────────────────────────
-    ("Coffee", "Espresso", 300, "A bold, full-bodied double shot pulled fresh to order.", "espresso", False, False),
-    ("Coffee", "Americano", 450, "Hot or iced. Espresso lengthened with hot water for a clean, smooth finish.", "americano", True, False),
-    ("Coffee", "Latte", 550, "Hot or iced. Silky steamed milk over a rich espresso base.", "latte", True, True),
-    ("Coffee", "Cappuccino", 550, "Hot or iced. Equal parts espresso, steamed milk and airy foam.", "latte", True, False),
-    ("Coffee", "Spanish Latte", 650, "Hot or iced. Sweetened condensed milk gives this latte its creamy depth.", "latte", True, True),
-    ("Coffee", "Vanilla Latte", 650, "Hot or iced. Smooth vanilla stirred through espresso and steamed milk.", "latte", False, False),
-    ("Coffee", "Caramel Latte", 650, "Hot or iced. Buttery caramel and espresso, finished with milk.", "latte", True, False),
-    ("Coffee", "Tiramisu Latte", 650, "Hot or iced. Cocoa and mascarpone notes for a dessert-style coffee.", "latte", False, False),
-    ("Coffee", "Popcorn Latte", 650, "Hot or iced. Our playful buttered-popcorn twist on a classic latte.", "latte", False, True),
-    ("Coffee", "Mocha", 650, "Hot or iced. Chocolate and espresso, the way it should be.", "mocha-frappe", True, False),
-    ("Coffee", "Pistachio Latte", 750, "Hot or iced. Roasted pistachio blended into a velvety latte.", "latte", True, True),
+    menu_item("Burgers", "Chicken Burgers", "Mighty Zinger", 730, "Crispy chicken fillet, iceberg lettuce and your choice of 2 sauces. Optional jalapenos are free.", "mighty-zinger", popular=True, featured=True, customizations=CHICKEN_BURGER_OPTIONS),
+    menu_item("Burgers", "Chicken Burgers", "Mighty Double Zinger", 1080, "Double crispy chicken, iceberg lettuce and your choice of 2 sauces. Optional jalapenos are free.", "mighty-double-zinger", popular=True, customizations=CHICKEN_BURGER_OPTIONS),
+    menu_item("Burgers", "Chicken Burgers", "Mighty Grilled Chicken", 730, "Grilled chicken, iceberg, tomato, onion and your choice of 2 sauces. Optional jalapenos are free.", "mighty-grilled-chicken", customizations=CHICKEN_BURGER_OPTIONS),
+    menu_item("Burgers", "Chicken Burgers", "Mighty Double Grilled Chicken", 1080, "Double grilled chicken, iceberg, tomato, onion and your choice of 2 sauces. Optional jalapenos are free.", "mighty-double-grilled-chicken", customizations=CHICKEN_BURGER_OPTIONS),
+    menu_item("Burgers", "Australian Beef", "Single Stack", 730, "1 beef patty, cheese and 67 Signature Sauce dip. Free lettuce, pickles, jalapenos, onion and tomato available.", "single-stack", featured=True, customizations=BEEF_STACK_OPTIONS),
+    menu_item("Burgers", "Australian Beef", "Double Stack", 1270, "2 beef patties, double cheese and 67 Signature Sauce dip. Free toppings available. Fried egg optional.", "double-stack", popular=True, featured=True, customizations=[BEEF_TOPPINGS, FRIED_EGG, MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Burgers", "Australian Beef", "Triple Stack", 1530, "3 beef patties, triple cheese and 67 Signature Sauce dip. Free lettuce, pickles, jalapenos, onion and tomato available.", "triple-stack", customizations=BEEF_STACK_OPTIONS),
+    menu_item("Burgers", "6-7 Beef Specials", "Mushroom Melt", 1230, "Double beef, cheese and house-made mushroom sauce.", "mushroom-melt", featured=True, customizations=[MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Burgers", "6-7 Beef Specials", "Smoky Barbecue Melt", 1370, "Double beef, cheese, iceberg, caramelised onions, BBQ sauce and garlic sauce.", "smoky-barbecue-melt", spicy=True, customizations=[MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Chicken Tenders", "Golden Tenders", "Golden Tenders", 670, "Crispy golden-fried chicken with 2 sauce dips.", "golden-tenders", popular=True, customizations=[size_group([option("4-pieces", "4 pieces"), option("6-pieces", "6 pieces", 300)]), PICK_TWO_SAUCES, MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Chicken Tenders", "Cheesy Tenders", "Cheesy Tenders", 830, "Crispy tenders loaded with warm cheese sauce.", "cheesy-tenders", customizations=[size_group([option("4-pieces", "4 pieces"), option("6-pieces", "6 pieces", 300)]), MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Loaded Fries", "Loaded Fries", "Fully Loaded Chicken Fries", 830, "Fries, chicken, cheese sauce, jalapenos and 2 sauces.", "fully-loaded-chicken-fries", popular=True, featured=True, customizations=[PICK_TWO_SAUCES]),
+    menu_item("Fries", "Fries", "Classic Fries", 330, "Golden crispy fries.", "classic-fries"),
+    menu_item("Fries", "Fries", "6-7 Masala Fries", 330, "Golden fries tossed in house seasoning.", "six-seven-masala-fries"),
+    menu_item("Fries", "Fries", "Saucy Fries", 400, "Classic fries with 1 sauce dip.", "saucy-fries", customizations=[PICK_ONE_SAUCE]),
+    menu_item("Fries", "Fries", "Cheesy Fries", 530, "Classic fries loaded with warm cheese sauce.", "cheesy-fries", popular=True),
+    menu_item("Fries", "Fries", "Curly Fries", 430, "Seasoned spiral-cut fries.", "curly-fries"),
+    menu_item("Wraps", "10-Inch Wraps", "Crispy Chicken Wrap", 730, "Crispy chicken, iceberg and choice of 2 sauces. Optional jalapenos are free.", "crispy-chicken-wrap", popular=True, customizations=CHICKEN_WRAP_OPTIONS),
+    menu_item("Wraps", "10-Inch Wraps", "Grilled Chicken Wrap", 730, "Grilled chicken, iceberg, tomato, onion and choice of 2 sauces. Optional jalapenos are free.", "grilled-chicken-wrap", customizations=CHICKEN_WRAP_OPTIONS),
+    menu_item("Grilled Sandwiches", "Grilled Sandwiches", "Tikka Grilled Sandwich", 599, "White or bran bread with chicken, mustard mayo, ketchup, olives, iceberg, capsicum, onion and tomato.", "grilled-sandwich", customizations=[BREAD_CHOICE, CHEESE_ADDON, SANDWICH_TOPPINGS]),
+    menu_item("Grilled Sandwiches", "Grilled Sandwiches", "Fajita Grilled Sandwich", 599, "White or bran bread with chicken, mustard mayo, ketchup, olives, iceberg, capsicum, onion and tomato.", "grilled-sandwich", customizations=[BREAD_CHOICE, CHEESE_ADDON, SANDWICH_TOPPINGS]),
+    menu_item("Fresh Salads", "Fresh Salads", "Grilled Chicken Salad", 670, "Fresh vegetables and greens with grilled chicken, olives and a light olive-oil dressing.", "grilled-chicken-salad", customizations=[size_group([option("medium", "Medium"), option("large", "Large", 360)])]),
+    menu_item("Fresh Salads", "Fresh Salads", "Creamy Russian Salad", 870, "Creamy fruit, vegetables and pasta finished with toppings of your choice.", "creamy-russian-salad", customizations=[size_group([option("medium", "Medium"), option("large", "Large", 360)])]),
+    menu_item("Little 6-7", "For Kids Under 12", "Mini Chicken Dog", 530, "Crispy chicken strips, iceberg and mayo or ketchup.", "mini-chicken-dog", customizations=[KIDS_SAUCE, KIDS_MEAL]),
+    menu_item("Little 6-7", "For Kids Under 12", "6-Piece Chicken Nuggets", 530, "Six crispy golden nuggets with mayo or ketchup.", "chicken-nuggets", customizations=[KIDS_SAUCE, KIDS_MEAL]),
+    menu_item("Little 6-7", "For Kids Under 12", "3-Piece Kids Tenders", 530, "Three crispy tenders with mayo or ketchup.", "kids-tenders", customizations=[KIDS_SAUCE, KIDS_MEAL]),
+    menu_item("Sweet Side", "Choose. Load. Love.", "Chocolate Drip", 530, "Mini pancakes or waffle finished with warm chocolate.", "chocolate-drip", customizations=SWEET_OPTIONS),
+    menu_item("Sweet Side", "Choose. Load. Love.", "Dairy Desire", 670, "Mini pancakes or waffle with a creamy dairy-style topping.", "dairy-desire", customizations=SWEET_OPTIONS),
+    menu_item("Sweet Side", "Choose. Load. Love.", "Oreo Crunch", 570, "Mini pancakes or waffle loaded with chocolate and Oreo crunch.", "oreo-crunch", popular=True, customizations=SWEET_OPTIONS),
+    menu_item("Sweet Side", "Choose. Load. Love.", "KitKat Crunch", 670, "Mini pancakes or waffle loaded with chocolate and KitKat crunch.", "kitkat-crunch", customizations=SWEET_OPTIONS),
+    menu_item("Sweet Side", "Choose. Load. Love.", "Kinder Bueno", 970, "Mini pancakes or waffle loaded with Kinder Bueno.", "kinder-bueno", featured=True, customizations=SWEET_OPTIONS),
 
-    # ── Frappes ──────────────────────────────────────────────────────────────
-    ("Frappes", "Vanilla Frappe", 800, "Blended ice, milk and vanilla, topped with fresh cream.", "caramel-frappe", False, False),
-    ("Frappes", "Caramel Frappe", 800, "Blended caramel and coffee, crowned with cream and a caramel drizzle.", "caramel-frappe", True, True),
-    ("Frappes", "Mocha Frappe", 800, "Chocolate and coffee blended smooth, topped with cream.", "mocha-frappe", True, False),
-    ("Frappes", "Pistachio Frappe", 900, "Our richest frappe — real pistachio, blended and topped with cream.", "pistachio-frappe", True, True),
-
-    # ── Food & Snacks ────────────────────────────────────────────────────────
-    ("Food & Snacks", "Big 67 Burger", 700, "Our signature oversized zinger burger, filled with lettuce and a sauce of your choice.", "big-67-burger", True, True),
-    ("Food & Snacks", "Mighty Wrap", 700, "Our 12 inch wrap gets as mighty as one can, filled with lettuce and a sauce of your choice.", "mighty-wrap", True, True),
-    ("Food & Snacks", "Chicken Strips", 700, "4 chicken strips served with two sauces of your choice.", "chicken-strips", True, False),
-    ("Food & Snacks", "Loaded Fries", 600, "Crispy fries loaded with sauces, jalapenos & cheese.", "loaded-fries", True, True),
-    ("Food & Snacks", "Cheese Balls", 500, "4 golden cheese balls, crispy & warm.", "cheese-balls", False, False),
-
-    # ── Combo ────────────────────────────────────────────────────────────────
-    ("Combo Meal", "The 67 Combo", 1250, "Burger or wrap along with our crispy fries and a refreshing signature drink.", "combo-meal", True, True),
-
-    # ── Iced Teas ────────────────────────────────────────────────────────────
-    ("Iced Teas", "Peach Iced Tea", 400, "Brewed tea over ice with sweet peach.", "peach-iced-tea", True, False),
-    ("Iced Teas", "Strawberry Iced Tea", 400, "Brewed tea over ice with ripe strawberry.", "strawberry-iced-tea", False, False),
-    ("Iced Teas", "Passion Fruit Iced Tea", 400, "Brewed tea over ice with tangy passion fruit.", "passion-fruit-iced-tea", False, False),
-
-    # ── Signature Drinks ─────────────────────────────────────────────────────
-    ("Signature Drinks", "Peach Breeze", 550, "Peach, citrus and soda over crushed ice — light and refreshing.", "peach-breeze", True, True),
-    ("Signature Drinks", "Strawberry Rush", 550, "Strawberry and soda layered over ice for a sweet-tart lift.", "strawberry-rush", True, False),
-    ("Signature Drinks", "Mango Burst", 550, "Alphonso-style mango, shaken and poured over ice.", "mango-burst", True, True),
-    ("Signature Drinks", "Berry Cola", 550, "Mixed berries stirred into chilled cola with fresh lemon.", "berry-cola", False, False),
-
-    # ── Smoothies ────────────────────────────────────────────────────────────
-    ("Smoothies", "Blackberry Smoothie", 700, "Thick-blended blackberry — fruit forward and creamy.", "blackberry-smoothie", False, False),
-    ("Smoothies", "Strawberry Smoothie", 700, "Thick-blended strawberry — sweet, smooth and cold.", "strawberry-smoothie", True, False),
-    ("Smoothies", "Mango Smoothie", 700, "Thick-blended mango — our sunniest drink on the menu.", "mango-smoothie", True, True),
-
-    # ── Desserts ─────────────────────────────────────────────────────────────
-    ("Desserts", "Chocolatey Mini Pancakes", 500, "Warm mini pancakes drowned in melted chocolate.", "chocolatey-mini-pancakes", True, False),
-    ("Desserts", "Oreo Mini Pancakes", 550, "Mini pancakes with chocolate and crushed Oreo.", "oreo-mini-pancakes", True, True),
-    ("Desserts", "Kitkat Mini Pancakes", 650, "Mini pancakes loaded with chocolate and Kitkat chunks.", "kitkat-mini-pancakes", True, True),
-    ("Desserts", "Chocolatey Waffles", 500, "A warm Belgian-style waffle under a blanket of chocolate.", "chocolatey-waffles", False, False),
-    ("Desserts", "Oreo Waffles", 550, "Chocolate waffle finished with crushed Oreo.", "oreo-waffles", True, False),
-    ("Desserts", "Kitkat Waffles", 650, "Chocolate waffle piled with Kitkat chunks.", "kitkat-waffles", True, True),
-
-    # ── Add Ons ──────────────────────────────────────────────────────────────
-    ("Add Ons", "Sauce Dip", 67, "Chipotle, Atomic, Garlic Mayo or our Signature Mixed Hot Sauce.", None, False, False),
-    ("Add Ons", "Extra Cheese", 67, "An extra helping of melted cheese.", None, False, False),
-    ("Add Ons", "Cheese Slice", 67, "One slice of cheese.", None, False, False),
-    ("Add Ons", "Water", 100, "Chilled bottled water.", None, False, False),
-    ("Add Ons", "Ice Cream Scoop", 100, "A scoop of vanilla ice cream for your dessert.", None, False, False),
+    menu_item("Signature Drinks", "Signature Drinks", "Peach Breeze", 550, "Peach, citrus and soda over crushed ice.", "peach-breeze", popular=True, featured=True),
+    menu_item("Signature Drinks", "Signature Drinks", "Strawberry Rush", 550, "Strawberry and soda layered over ice.", "strawberry-rush", popular=True),
+    menu_item("Signature Drinks", "Signature Drinks", "Mango Burst", 550, "Mango shaken and poured over ice.", "mango-burst", popular=True, featured=True),
+    menu_item("Signature Drinks", "Signature Drinks", "Berry Cola", 550, "Mixed berries stirred into chilled cola with fresh lemon.", "berry-cola"),
+    menu_item("Iced Teas", "Iced Teas", "Peach Iced Tea", 400, "Brewed tea over ice with sweet peach.", "peach-iced-tea", popular=True),
+    menu_item("Iced Teas", "Iced Teas", "Strawberry Iced Tea", 400, "Brewed tea over ice with ripe strawberry.", "strawberry-iced-tea"),
+    menu_item("Iced Teas", "Iced Teas", "Passion Fruit Iced Tea", 400, "Brewed tea over ice with tangy passion fruit.", "passion-fruit-iced-tea"),
+    menu_item("Smoothies", "Smoothies", "Blackberry Smoothie", 700, "Thick-blended blackberry, fruit-forward and creamy.", "blackberry-smoothie"),
+    menu_item("Smoothies", "Smoothies", "Strawberry Smoothie", 700, "Thick-blended strawberry, sweet and cold.", "strawberry-smoothie", popular=True),
+    menu_item("Smoothies", "Smoothies", "Mango Smoothie", 700, "Thick-blended mango smoothie.", "mango-smoothie", popular=True, featured=True),
+    menu_item("Frappes", "Frappes", "Vanilla Frappe", 800, "Blended ice, milk and vanilla, topped with fresh cream.", "caramel-frappe"),
+    menu_item("Frappes", "Frappes", "Caramel Frappe", 800, "Blended caramel and coffee with cream and caramel drizzle.", "caramel-frappe", popular=True, featured=True),
+    menu_item("Frappes", "Frappes", "Mocha Frappe", 800, "Chocolate and coffee blended smooth, topped with cream.", "mocha-frappe", popular=True),
+    menu_item("Frappes", "Frappes", "Pistachio Frappe", 900, "Real pistachio blended into a rich frappe.", "pistachio-frappe", popular=True, featured=True),
+    menu_item("Iced Coffees", "Iced Coffees", "Iced Americano", 450, "Espresso lengthened over ice for a clean finish.", "americano", popular=True),
+    menu_item("Iced Coffees", "Iced Coffees", "Iced Latte", 550, "Espresso and chilled milk over ice.", "latte", popular=True),
+    menu_item("Iced Coffees", "Iced Coffees", "Iced Spanish Latte", 650, "Iced latte with sweetened condensed milk.", "latte", popular=True),
+    menu_item("Iced Coffees", "Iced Coffees", "Iced Mocha", 650, "Chocolate, espresso and chilled milk.", "mocha-frappe"),
+    menu_item("Hot Coffees", "Hot Coffees", "Espresso", 300, "A bold, full-bodied double shot pulled fresh to order.", "espresso"),
+    menu_item("Hot Coffees", "Hot Coffees", "Americano", 450, "Espresso lengthened with hot water for a clean, smooth finish.", "americano", popular=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Latte", 550, "Silky steamed milk over a rich espresso base.", "latte", popular=True, featured=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Cappuccino", 550, "Equal parts espresso, steamed milk and airy foam.", "latte", popular=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Spanish Latte", 650, "Sweetened condensed milk gives this latte its creamy depth.", "latte", popular=True, featured=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Vanilla Latte", 650, "Smooth vanilla stirred through espresso and steamed milk.", "latte"),
+    menu_item("Hot Coffees", "Hot Coffees", "Caramel Latte", 650, "Buttery caramel and espresso, finished with milk.", "latte", popular=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Tiramisu Latte", 650, "Cocoa and mascarpone notes for a dessert-style coffee.", "latte"),
+    menu_item("Hot Coffees", "Hot Coffees", "Popcorn Latte", 650, "Buttered-popcorn twist on a classic latte.", "latte", featured=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Mocha", 650, "Chocolate and espresso, the way it should be.", "mocha-frappe", popular=True),
+    menu_item("Hot Coffees", "Hot Coffees", "Pistachio Latte", 750, "Roasted pistachio blended into a velvety latte.", "latte", popular=True, featured=True),
+    menu_item("Add Ons", "Extras", "Sauce Dip", 130, "Chipotle, Atomic, Garlic Mayo or 67 Special.", None, customizations=[PICK_ONE_SAUCE]),
+    menu_item("Add Ons", "Extras", "Extra Cheese", 130, "An extra helping of melted cheese.", None),
+    menu_item("Add Ons", "Extras", "Water", 100, "Chilled bottled water.", None),
 ]
 
 SETTINGS = {
@@ -90,8 +244,8 @@ SETTINGS = {
     "address": "75 CCA, DD Block, DHA Phase 4, Lahore",
     "hours": "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
     "whatsapp": "923246756767",
-    "instagram_url": "https://instagram.com/six7coffee",
-    "facebook_url": "https://facebook.com/six7coffee",
+    "instagram_url": "https://instagram.com/sixseven.pk",
+    "facebook_url": "https://facebook.com/sixseven.pk",
     "brand_name": "Six Seven",
     "tagline": "Good Food. Good Coffee. Good Mood.",
     "currency": "PKR",
@@ -102,39 +256,32 @@ SETTINGS = {
     "delivery_radius_km": "5",
     "restaurant_lat": "31.4641372",
     "restaurant_lng": "74.3822137",
-    # Loyalty: earn 1 point per Rs. 1 spent; each point is worth 5 paisa, so
-    # 1000 points redeems Rs. 50 — a 5% return, with Rs. 50 the smallest payout.
     "points_per_dollar": "1",
     "points_value_cents": "5",
     "min_redeem_points": "1000",
     "rewards_enabled": "true",
-    # Keep this factual: there is no free-delivery threshold in the pricing code,
-    # so the banner must not promise one. Delivery is a flat Rs. 150 inside 5 km.
-    "announcement": "Open late · Fri from 2 PM · Sun from 5 PM · Delivery across DHA",
+    "announcement": "New food menu live · Mighty Zinger, Australian beef burgers, wraps, tenders and loaded fries",
     "announcement_active": "true",
     "maps_embed": "https://www.google.com/maps?q=31.4641372,74.3822137&z=16&output=embed",
     "cash_on_delivery": "true",
-
-    # Site copy — all editable from Admin → Settings.
-    "menu_subtitle": "Specialty coffee, loaded snacks, frappes and desserts — made fresh to order.",
-    "footer_tagline": "Great coffee. Comfort food. Refreshing drinks. Irresistible desserts. "
-                      "Made with quality ingredients and served with warm hospitality.",
+    "menu_subtitle": "Mighty zingers, Australian beef burgers, tenders, loaded fries, wraps, salads, sweets and drinks — made fresh to order.",
+    "footer_tagline": "Mighty burgers, crispy tenders, loaded fries, specialty coffee and cold drinks from DHA Phase 4 Lahore.",
     "closed_message": "We're closed right now. Online ordering opens Friday at 2 PM, Sunday at 5 PM, and 12 PM on other days.",
     "contact_reply_time": "We usually reply within a few hours",
     "contact_hours_note": "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
-    "deals_section_title": "Combos & Deals",
-    "deals_section_subtitle": "Get more for less — our combo pairs a burger or wrap with fries and a signature drink.",
-    "featured_section_title": "Fan Favourites",
-    "featured_section_subtitle": "The ones our regulars keep coming back for.",
+    "deals_section_title": "Meal Upgrades",
+    "deals_section_subtitle": "Add fries and a signature drink to eligible burgers, wraps and tenders from the item options.",
+    "featured_section_title": "Fresh From The New Menu",
+    "featured_section_subtitle": "Mighty burgers, Australian beef stacks, crispy tenders and loaded fries.",
     "promo_headline": "Order Online, Your Way",
-    "promo_body": "Browse the full menu, customise your order, and get it delivered across "
-                  "DHA — or collect it fresh from our DHA Phase 4 counter.",
+    "promo_body": "Browse the full food menu, choose your sauces, add a meal upgrade, and get it delivered across DHA or collect fresh from our DHA Phase 4 counter.",
+    "global_discount_excluded_categories": "Deals, Combo Meal",
 }
 
 THEME = {
     "restaurant_name": "Six Seven",
     "hero_text": "Good Food. Good Coffee. Good Mood.",
-    "hero_subtext": "Specialty coffee, loaded snacks and desserts — made fresh in DHA Phase 4 and delivered across Lahore.",
+    "hero_subtext": "Mighty burgers, loaded fries, crispy tenders, wraps and coffee — made fresh in DHA Phase 4.",
     "primary_color": "#E36616",
     "secondary_color": "#035B5C",
     "accent_color": "#FDF1D7",
@@ -151,38 +298,45 @@ def main() -> None:
         with conn.cursor() as cur:
             cur.execute("UPDATE restaurants SET name = %s WHERE id = %s", ("Six Seven", RID))
 
-            # ── menu ──────────────────────────────────────────────────────────
             cur.execute("SELECT id, name FROM menu_items WHERE restaurant_id = %s", (RID,))
             existing = {name: mid for mid, name in cur.fetchall()}
             keep: set[int] = set()
 
-            for order, (cat, name, rs, desc, slug, popular, featured) in enumerate(MENU, start=1):
-                image = f"{IMG}/{slug}.webp" if slug else ""
-                cents = rs * 100
-                if name in existing:
-                    mid = existing[name]
+            for display_order, item in enumerate(MENU, start=1):
+                image = f"{IMG}/{item['image_slug']}.webp" if item["image_slug"] else ""
+                cents = item["price_rs"] * 100
+                customizations_json = item["customizations"]
+                if item["name"] in existing:
+                    mid = existing[item["name"]]
                     cur.execute(
                         """UPDATE menu_items
-                              SET category=%s, description=%s, price=%s, price_cents=%s,
-                                  currency='PKR', image=%s, is_popular=%s, is_featured=%s,
-                                  is_available=TRUE, display_order=%s, rating=%s
+                              SET category=%s, subcategory=%s, description=%s, price=%s, price_cents=%s,
+                                  currency='PKR', image=%s, is_spicy=%s, is_popular=%s, is_featured=%s,
+                                  customizations=%s::jsonb, is_available=TRUE, display_order=%s, rating=%s
                             WHERE id=%s AND restaurant_id=%s""",
-                        (cat, desc, rs, cents, image, popular, featured, order, 4.8, mid, RID),
+                        (
+                            item["category"], item["subcategory"], item["description"], item["price_rs"], cents,
+                            image, item["spicy"], item["popular"], item["featured"], json_dumps(customizations_json),
+                            display_order, 0, mid, RID,
+                        ),
                     )
                 else:
                     cur.execute(
                         """INSERT INTO menu_items
-                             (restaurant_id, category, name, description, price, price_cents,
-                              currency, image, rating, is_popular, is_featured, is_available,
-                              display_order, packaging_cost_cents)
-                           VALUES (%s,%s,%s,%s,%s,%s,'PKR',%s,%s,%s,%s,TRUE,%s,0)
+                             (restaurant_id, category, subcategory, name, description, price, price_cents,
+                              currency, image, rating, is_spicy, is_popular, is_featured, customizations,
+                              is_available, display_order, packaging_cost_cents)
+                           VALUES (%s,%s,%s,%s,%s,%s,%s,'PKR',%s,%s,%s,%s,%s,%s::jsonb,TRUE,%s,0)
                            RETURNING id""",
-                        (RID, cat, name, desc, rs, cents, image, 4.8, popular, featured, order),
+                        (
+                            RID, item["category"], item["subcategory"], item["name"], item["description"],
+                            item["price_rs"], cents, image, 0, item["spicy"], item["popular"], item["featured"],
+                            json_dumps(customizations_json), display_order,
+                        ),
                     )
                     mid = cur.fetchone()[0]
                 keep.add(mid)
 
-            # retire demo items that are not on the printed menu
             cur.execute(
                 "UPDATE menu_items SET is_available = FALSE WHERE restaurant_id = %s AND NOT (id = ANY(%s))",
                 (RID, list(keep)),
@@ -193,15 +347,13 @@ def main() -> None:
                 (RID, list(keep)),
             )
 
-            # ── settings ──────────────────────────────────────────────────────
-            for k, v in SETTINGS.items():
+            for key, value in SETTINGS.items():
                 cur.execute(
                     """INSERT INTO settings (restaurant_id, key, value) VALUES (%s,%s,%s)
                        ON CONFLICT (restaurant_id, key) DO UPDATE SET value = EXCLUDED.value""",
-                    (RID, k, v),
+                    (RID, key, value),
                 )
 
-            # ── theme ─────────────────────────────────────────────────────────
             cols = ", ".join(THEME)
             ph = ", ".join(["%s"] * len(THEME))
             upd = ", ".join(f"{c} = EXCLUDED.{c}" for c in THEME)
@@ -211,21 +363,31 @@ def main() -> None:
                 (RID, *THEME.values()),
             )
 
-            # ── the single branch ─────────────────────────────────────────────
             cur.execute("DELETE FROM branches WHERE restaurant_id = %s", (RID,))
             cur.execute(
                 """INSERT INTO branches (restaurant_id, name, address, city, phone, hours, is_open, is_default, maps_url)
                    VALUES (%s,%s,%s,%s,%s,%s,TRUE,TRUE,%s)""",
-                (RID, "Six Seven — DHA Phase 4", "75 CCA, DD Block, DHA Phase 4",
-                 "Lahore", "0324-6756767",
-                 "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
-                 "https://maps.google.com/?q=31.4641372,74.3822137"),
+                (
+                    RID,
+                    "Six Seven - DHA Phase 4",
+                    "75 CCA, DD Block, DHA Phase 4",
+                    "Lahore",
+                    "0324-6756767",
+                    "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
+                    "https://maps.google.com/?q=31.4641372,74.3822137",
+                ),
             )
 
             cur.execute("SELECT count(*) FROM menu_items WHERE restaurant_id=%s AND is_available", (RID,))
             print(f"menu items live: {cur.fetchone()[0]}")
 
     print("Six Seven data loaded.")
+
+
+def json_dumps(value: object) -> str:
+    import json
+
+    return json.dumps(value, separators=(",", ":"))
 
 
 if __name__ == "__main__":

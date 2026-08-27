@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
     id            SERIAL PRIMARY KEY,
     restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     category      VARCHAR(100) DEFAULT '',
+    subcategory   VARCHAR(100) DEFAULT '',
     name          VARCHAR(200) NOT NULL,
     description   TEXT         DEFAULT '',
     price         DECIMAL(10,2) NOT NULL,
@@ -118,6 +119,7 @@ CREATE TABLE IF NOT EXISTS menu_items (
     is_featured   BOOLEAN      DEFAULT FALSE,
     is_available  BOOLEAN      DEFAULT TRUE,
     display_order INTEGER,
+    customizations JSONB       DEFAULT '[]'::jsonb,
     created_at    TIMESTAMPTZ  DEFAULT NOW()
 );
 
@@ -340,6 +342,8 @@ def init_db() -> None:
                     'ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE',
                     'ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE',
                     'ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS display_order INTEGER',
+                    'ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS subcategory VARCHAR(100) DEFAULT ''''',
+                    'ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS customizations JSONB DEFAULT ''[]''::jsonb',
                     'ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()',
                     'ALTER TABLE branches ADD COLUMN IF NOT EXISTS restaurant_id INTEGER',
                     'ALTER TABLE branches ADD COLUMN IF NOT EXISTS maps_url TEXT DEFAULT ''''',

@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payment";
+import { formatCustomizationText } from "@/lib/customizations";
+import type { SelectedCustomization } from "@/types/menu";
 
 function adminFetch(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("admin_token");
@@ -35,6 +37,7 @@ interface OrderItem {
   quantity: number;
   price: number;
   category?: string;
+  customizations?: SelectedCustomization[];
 }
 
 interface Order {
@@ -572,6 +575,7 @@ export default function AdminCurrentOrders() {
                     <span
                       key={i}
                       className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs"
+                      title={formatCustomizationText(item.customizations || [])}
                     >
                       {item.quantity}× {item.name}
                     </span>
@@ -591,7 +595,14 @@ export default function AdminCurrentOrders() {
                     <tbody>
                       {order.items.map((item, i) => (
                         <tr key={i} className="border-b last:border-0">
-                          <td className="py-1.5">{item.name}</td>
+                          <td className="py-1.5">
+                            <span className="font-medium">{item.name}</span>
+                            {item.customizations?.length ? (
+                              <span className="mt-0.5 block text-xs text-muted-foreground">
+                                {formatCustomizationText(item.customizations)}
+                              </span>
+                            ) : null}
+                          </td>
                           <td className="py-1.5 text-muted-foreground text-center">
                             {item.quantity}×
                           </td>

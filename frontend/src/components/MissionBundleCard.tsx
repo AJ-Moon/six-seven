@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,8 @@ type Bundle = {
 };
 
 export function MissionBundleCard() {
-  const { items: cartItems, addItem } = useCart();
+  const { items: cartItems } = useCart();
+  const navigate = useNavigate();
   const [offer, setOffer] = useState<Bundle | null>(null);
   const visitorId = useMemo(() => getVisitorId(), []);
   const sessionId = useMemo(() => getSessionId(), []);
@@ -39,10 +41,8 @@ export function MissionBundleCard() {
 
   if (!offer) return null;
   const addBundle = () => {
-    for (const item of offer.bundle.items) {
-      addItem({ menuItemId: item.id, name: item.name, price: item.priceCents / 100, image: item.image || "" });
-    }
     track("promotion_clicked", { cartId: getCartId(), missionId: String(offer.missionId), properties: { type: "intelligent_bundle" } });
+    navigate("/menu");
     setOffer(null);
   };
 
@@ -54,7 +54,7 @@ export function MissionBundleCard() {
           <p className="text-sm text-muted-foreground">{offer.bundle.items.map((item) => item.name).join(" + ")}</p>
           <p className="mt-1 text-xs text-muted-foreground">Server-validated contribution margin: {(offer.bundle.contributionMarginCents / 100).toFixed(2)}</p>
         </div>
-        <Button onClick={addBundle}>Add bundle</Button>
+        <Button onClick={addBundle}>Choose options</Button>
       </CardContent>
     </Card>
   );

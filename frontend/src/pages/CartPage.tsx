@@ -15,6 +15,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { MissionBundleCard } from "@/components/MissionBundleCard";
 import { formatMoney } from "@/lib/money";
+import { formatCustomizationText } from "@/lib/customizations";
 
 export default function CartPage() {
   const { items, removeItem, updateQty, total, clearCart } = useCart();
@@ -84,7 +85,7 @@ export default function CartPage() {
               <MissionBundleCard />
               {items.map((item) => (
                 <div
-                  key={item.menuItemId}
+                  key={item.lineId}
                   className="flex gap-4 rounded-xl border border-border bg-card p-4"
                 >
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -102,11 +103,18 @@ export default function CartPage() {
                   </div>
                   <div className="flex flex-1 flex-col justify-between">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-medium text-foreground">
-                        {item.name}
-                      </h3>
+                      <div>
+                        <h3 className="font-medium text-foreground">
+                          {item.name}
+                        </h3>
+                        {item.customizations?.length ? (
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            {formatCustomizationText(item.customizations)}
+                          </p>
+                        ) : null}
+                      </div>
                       <button
-                        onClick={() => removeItem(item.menuItemId)}
+                        onClick={() => removeItem(item.lineId)}
                         className="shrink-0 text-muted-foreground hover:text-destructive"
                         aria-label="Remove item"
                       >
@@ -120,7 +128,7 @@ export default function CartPage() {
                           size="icon"
                           className="h-8 w-8 rounded-full"
                           onClick={() =>
-                            updateQty(item.menuItemId, item.quantity - 1)
+                            updateQty(item.lineId, item.quantity - 1)
                           }
                         >
                           <Minus className="h-3 w-3" />
@@ -133,7 +141,7 @@ export default function CartPage() {
                           size="icon"
                           className="h-8 w-8 rounded-full"
                           onClick={() =>
-                            updateQty(item.menuItemId, item.quantity + 1)
+                            updateQty(item.lineId, item.quantity + 1)
                           }
                         >
                           <Plus className="h-3 w-3" />
@@ -170,11 +178,16 @@ export default function CartPage() {
                 <div className="space-y-3 text-sm">
                   {items.map((item) => (
                     <div
-                      key={item.menuItemId}
-                      className="flex justify-between text-muted-foreground"
+                      key={item.lineId}
+                      className="flex justify-between gap-3 text-muted-foreground"
                     >
                       <span>
                         {item.name} × {item.quantity}
+                        {item.customizations?.length ? (
+                          <span className="mt-0.5 block text-xs">
+                            {formatCustomizationText(item.customizations)}
+                          </span>
+                        ) : null}
                       </span>
                       <span>{formatMoney((item.price * item.quantity), currencySymbol)}</span>
                     </div>

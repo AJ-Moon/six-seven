@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { formatMoney } from "@/lib/money";
+import type { MenuCustomizationGroup } from "@/types/menu";
 
 type MenuItem = {
   id: number;
@@ -20,6 +21,7 @@ type MenuItem = {
   image: string;
   isPopular: boolean;
   isFeatured?: boolean;
+  customizations?: MenuCustomizationGroup[];
 };
 
 export function DealsSection() {
@@ -59,6 +61,7 @@ export function DealsSection() {
           discountedPrice,
           discount,
           image: item.image,
+          customizations: item.customizations || [],
           badge: item.isFeatured
             ? "Featured"
             : item.isPopular
@@ -210,6 +213,13 @@ export function DealsSection() {
                     size="sm"
                     className="w-full gap-2"
                     onClick={() => {
+                      if (deal.customizations.length) {
+                        navigate(`/menu?search=${encodeURIComponent(deal.title)}`);
+                        toast.message("Choose your options on the menu page", {
+                          description: deal.title,
+                        });
+                        return;
+                      }
                       addItem({
                         menuItemId: deal.id,
                         name: deal.title,

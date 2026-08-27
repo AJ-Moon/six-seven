@@ -30,6 +30,8 @@ import { fetchJsonWithRetry } from "@/lib/api";
 import { track } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
 import { srcSetFor } from "@/lib/images";
+import { MenuItemCustomizer } from "@/components/menu/menu-item-customizer";
+import type { PublicMenuItem, SelectedCustomization } from "@/types/menu";
 
 const toTitle = (value: string) =>
   value
@@ -38,22 +40,9 @@ const toTitle = (value: string) =>
     .trim()
     .replace(/\b\w/g, (m) => m.toUpperCase());
 
-type MenuItem = {
-  id: number;
-  category: string;
-  name: string;
-  description: string;
-  price: number;
-  salePrice?: number | null;
-  image: string;
-  isSpicy: boolean;
-  isPopular: boolean;
-  isFeatured?: boolean;
-};
-
 export default function MenuPage() {
   const { addItem } = useCart();
-  const { restaurantName, menuSubtitle } = useRestaurant();
+  const { restaurantName, menuSubtitle, currencySymbol } = useRestaurant();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState(
@@ -67,6 +56,7 @@ export default function MenuPage() {
     () => searchParams.get("sort") || "popular",
   );
   const [showFilters, setShowFilters] = useState(false);
+  const [customizingItem, setCustomizingItem] = useState<PublicMenuItem | null>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const lastTrackedResultKey = useRef("");
@@ -129,7 +119,7 @@ export default function MenuPage() {
   } = useQuery({
     queryKey: ["menu", activeCategory, debouncedSearch, sortBy],
     queryFn: () =>
-      fetchJsonWithRetry<MenuItem[]>(menuPath, undefined, {
+      fetchJsonWithRetry<PublicMenuItem[]>(menuPath, undefined, {
         timeoutMs: 15000,
         retries: 1,
       }),
@@ -145,6 +135,37 @@ export default function MenuPage() {
   const maxPrice = allItems.length > 0
     ? Math.ceil(Math.max(...allItems.map((i) => i.price)))
     : 100;
+
+  const itemBasePrice = (item: PublicMenuItem) =>
+    item.salePrice != null && item.salePrice < item.price ? item.salePrice : item.price;
+
+  const addMenuItem = (
+    item: PublicMenuItem,
+    customizations: SelectedCustomization[] = [],
+    modifierTotal = 0,
+  ) => {
+    addItem({
+      menuItemId: item.id,
+      name: item.name,
+      price: itemBasePrice(item) + modifierTotal,
+      image: item.image,
+      customizations,
+    });
+    toast.success(`${item.name} added to cart`, {
+      action: {
+        label: "View Cart",
+        onClick: () => navigate("/cart"),
+      },
+    });
+  };
+
+  const handleAddItem = (item: PublicMenuItem) => {
+    if (item.customizations?.length) {
+      setCustomizingItem(item);
+      return;
+    }
+    addMenuItem(item);
+  };
 
   useEffect(() => {
     track("menu_viewed");
@@ -395,22 +416,7 @@ export default function MenuPage() {
                         aria-label={`Add ${item.name} to cart`}
                         className="six7-add six7-press absolute bottom-2 right-2 h-11 w-11 rounded-full shadow-lg sm:bottom-3 sm:right-3"
                         onClick={() => {
-                          const finalPrice =
-                            item.salePrice != null && item.salePrice < item.price
-                              ? item.salePrice
-                              : item.price;
-                          addItem({
-                            menuItemId: item.id,
-                            name: item.name,
-                            price: finalPrice,
-                            image: item.image,
-                          });
-                          toast.success(`${item.name} added to cart`, {
-                            action: {
-                              label: "View Cart",
-                              onClick: () => navigate("/cart"),
-                            },
-                          });
+                          handleAddItem(item);
                         }}
                       >
                         <Plus className="h-5 w-5" />
@@ -418,6 +424,11 @@ export default function MenuPage() {
                       </Button>
                     </div>
                     <div className="p-3 sm:p-4">
+                      {item.subcategory && (
+                        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-primary/80">
+                          {item.subcategory}
+                        </p>
+                      )}
                       <h3 className="font-serif text-base font-semibold text-card-foreground line-clamp-2 sm:text-lg sm:line-clamp-1">
                         {item.name}
                       </h3>
@@ -446,26 +457,10 @@ export default function MenuPage() {
                           size="sm"
                           className="six7-press h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm"
                           onClick={() => {
-                            const finalPrice =
-                              item.salePrice != null &&
-                              item.salePrice < item.price
-                                ? item.salePrice
-                                : item.price;
-                            addItem({
-                              menuItemId: item.id,
-                              name: item.name,
-                              price: finalPrice,
-                              image: item.image,
-                            });
-                            toast.success(`${item.name} added to cart`, {
-                              action: {
-                                label: "View Cart",
-                                onClick: () => navigate("/cart"),
-                              },
-                            });
+                            handleAddItem(item);
                           }}
                         >
-                          Add to Cart
+                          {item.customizations?.length ? "Choose Options" : "Add to Cart"}
                         </Button>
                       </div>
                     </div>
@@ -477,6 +472,19 @@ export default function MenuPage() {
         </section>
       </main>
       <Footer />
+      <MenuItemCustomizer
+        item={customizingItem}
+        open={Boolean(customizingItem)}
+        currencySymbol={currencySymbol}
+        onOpenChange={(open) => {
+          if (!open) setCustomizingItem(null);
+        }}
+        onConfirm={({ customizations, modifierTotal }) => {
+          if (!customizingItem) return;
+          addMenuItem(customizingItem, customizations, modifierTotal);
+          setCustomizingItem(null);
+        }}
+      />
     </div>
   );
 }

@@ -13,17 +13,20 @@ from services.events import emit_server_event
 class RequestedLine:
     menu_item_id: int
     quantity: int
+    customizations: tuple[dict, ...] = ()
 
 
 @dataclass(frozen=True)
 class PricedLine:
     menu_item_id: int
+    line_key: str
     name: str
     category: str
     quantity: int
     currency: str
     gross_unit_price_cents: int
     net_unit_price_cents: int
+    customizations: tuple[dict, ...]
     ingredient_cost_cents: Optional[int]
     packaging_cost_cents: int
 
@@ -55,20 +58,134 @@ class PricedLine:
             "quantity": self.quantity,
             "price": cents_to_float(self.net_unit_price_cents),
             "category": self.category,
+            "customizations": list(self.customizations),
         }
 
 
 def normalize_requested_lines(lines: Iterable[RequestedLine]) -> list[RequestedLine]:
-    combined: dict[int, int] = {}
+    normalized: list[RequestedLine] = []
     for line in lines:
         if line.quantity < 1 or line.quantity > 99:
             raise HTTPException(status_code=422, detail="Item quantity must be between 1 and 99")
-        combined[line.menu_item_id] = combined.get(line.menu_item_id, 0) + line.quantity
-        if combined[line.menu_item_id] > 99:
-            raise HTTPException(status_code=422, detail="Combined item quantity cannot exceed 99")
-    if not combined:
+        normalized.append(line)
+    if not normalized:
         raise HTTPException(status_code=422, detail="items must not be empty")
-    return [RequestedLine(menu_item_id=item_id, quantity=quantity) for item_id, quantity in combined.items()]
+    return normalized
+
+
+def _load_customization_config(raw) -> list[dict]:
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, str):
+        try:
+            data = json.loads(raw)
+            return data if isinstance(data, list) else []
+        except json.JSONDecodeError:
+            return []
+    return []
+
+
+def _normalize_selected_customizations(raw: tuple[dict, ...] | list[dict] | None) -> list[dict]:
+    selected: list[dict] = []
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        group_id = str(item.get("groupId") or "").strip()
+        option_id = str(item.get("optionId") or "").strip()
+        if not group_id or not option_id:
+            continue
+        try:
+            quantity = int(item.get("quantity") or 1)
+        except (TypeError, ValueError):
+            quantity = 1
+        selected.append({
+            "groupId": group_id,
+            "optionId": option_id,
+            "quantity": max(1, min(10, quantity)),
+        })
+    return selected
+
+
+def _price_selected_customizations(
+    menu_item_name: str,
+    config: list[dict],
+    raw_selected: tuple[dict, ...] | list[dict] | None,
+) -> tuple[int, tuple[dict, ...], str]:
+    selected = _normalize_selected_customizations(raw_selected)
+    config_groups = {str(group.get("id") or ""): group for group in config if group.get("id")}
+    selected_by_group: dict[str, dict[str, int]] = {}
+    for item in selected:
+        selected_by_group.setdefault(item["groupId"], {})
+        selected_by_group[item["groupId"]][item["optionId"]] = (
+            selected_by_group[item["groupId"]].get(item["optionId"], 0) + item["quantity"]
+        )
+
+    details: list[dict] = []
+    modifier_cents = 0
+    for group in config:
+        group_id = str(group.get("id") or "")
+        if not group_id:
+            continue
+        depends_on = group.get("dependsOn") or {}
+        if depends_on:
+            parent_group = str(depends_on.get("groupId") or "")
+            parent_option = str(depends_on.get("optionId") or "")
+            if selected_by_group.get(parent_group, {}).get(parent_option, 0) < 1:
+                if selected_by_group.get(group_id):
+                    raise HTTPException(status_code=422, detail=f"{group.get('name', 'An option')} is not available for {menu_item_name}")
+                continue
+
+        option_rows = {
+            str(option.get("id") or ""): option
+            for option in group.get("options", [])
+            if option.get("id")
+        }
+        selected_options = selected_by_group.get(group_id, {})
+        total_selected = sum(selected_options.values())
+        required = bool(group.get("required"))
+        min_selections = int(group.get("minSelections") or (1 if required else 0))
+        max_selections = group.get("maxSelections")
+        max_selections = int(max_selections) if max_selections is not None else None
+
+        if required and total_selected < min_selections:
+            raise HTTPException(status_code=422, detail=f"Please choose {group.get('name', 'required options')} for {menu_item_name}")
+        if max_selections is not None and total_selected > max_selections:
+            raise HTTPException(status_code=422, detail=f"Too many choices for {group.get('name', menu_item_name)}")
+
+        allow_repeats = bool(group.get("allowRepeats"))
+        for option_id, quantity in selected_options.items():
+            option = option_rows.get(option_id)
+            if not option:
+                raise HTTPException(status_code=422, detail=f"Invalid option selected for {menu_item_name}")
+            if not allow_repeats and quantity > 1:
+                raise HTTPException(status_code=422, detail=f"{option.get('name', 'This option')} can only be selected once")
+            price_delta_cents = int(option.get("priceDeltaCents") or 0)
+            modifier_cents += price_delta_cents * quantity
+            details.append({
+                "groupId": group_id,
+                "groupName": str(group.get("name") or ""),
+                "optionId": option_id,
+                "optionName": str(option.get("name") or ""),
+                "priceDelta": cents_to_float(price_delta_cents),
+                "quantity": quantity,
+            })
+
+    unknown_groups = set(selected_by_group) - set(config_groups)
+    if unknown_groups:
+        raise HTTPException(status_code=422, detail=f"Invalid customization selected for {menu_item_name}")
+
+    key_payload = [
+        {
+            "groupId": detail["groupId"],
+            "optionId": detail["optionId"],
+            "quantity": detail["quantity"],
+        }
+        for detail in details
+    ]
+    line_key = json.dumps(key_payload, sort_keys=True, separators=(",", ":"))
+    return modifier_cents, tuple(details), line_key
 
 
 def _split_csv(value: str) -> set[str]:
@@ -124,7 +241,8 @@ def price_menu_lines(cursor, tenant_id: int, requested: Iterable[RequestedLine])
                   COALESCE(price_cents, round(price * 100)::bigint),
                   COALESCE(sale_price_cents,
                            CASE WHEN sale_price IS NULL THEN NULL ELSE round(sale_price * 100)::bigint END),
-                  ingredient_cost_cents, COALESCE(packaging_cost_cents, 0), is_available
+                  ingredient_cost_cents, COALESCE(packaging_cost_cents, 0), is_available,
+                  customizations
            FROM menu_items
            WHERE restaurant_id = %s AND id = ANY(%s)""",
         (tenant_id, item_ids),
@@ -147,12 +265,21 @@ def price_menu_lines(cursor, tenant_id: int, requested: Iterable[RequestedLine])
             global_discount_percent,
             excluded_categories,
         )
-        net_cents = effective_sale_cents if effective_sale_cents is not None else gross_cents
+        modifier_cents, selected_customizations, customization_key = _price_selected_customizations(
+            row[1],
+            _load_customization_config(row[9]),
+            request_line.customizations,
+        )
+        base_net_cents = effective_sale_cents if effective_sale_cents is not None else gross_cents
+        gross_with_modifiers_cents = gross_cents + modifier_cents
+        net_cents = base_net_cents + modifier_cents
         priced.append(
             PricedLine(
-                menu_item_id=int(row[0]), name=row[1], category=row[2] or "",
+                menu_item_id=int(row[0]), line_key=f"{row[0]}:{customization_key}",
+                name=row[1], category=row[2] or "",
                 quantity=request_line.quantity, currency=(row[3] or "USD").upper(),
-                gross_unit_price_cents=gross_cents, net_unit_price_cents=net_cents,
+                gross_unit_price_cents=gross_with_modifiers_cents, net_unit_price_cents=net_cents,
+                customizations=selected_customizations,
                 ingredient_cost_cents=int(row[6]) if row[6] is not None else None,
                 packaging_cost_cents=int(row[7] or 0),
             )
@@ -206,9 +333,9 @@ def persist_cart_snapshot(
     for line in lines:
         cursor.execute(
             """INSERT INTO cart_lines
-               (tenant_id, cart_id, menu_item_id, quantity, unit_price_cents, line_total_cents)
-               VALUES (%s,%s,%s,%s,%s,%s)""",
-            (tenant_id, cart_id, line.menu_item_id, line.quantity, line.net_unit_price_cents, line.line_revenue_cents),
+               (tenant_id, cart_id, menu_item_id, line_key, quantity, unit_price_cents, line_total_cents)
+               VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+            (tenant_id, cart_id, line.menu_item_id, line.line_key, line.quantity, line.net_unit_price_cents, line.line_revenue_cents),
         )
 
 
@@ -221,6 +348,7 @@ def persist_order_items(cursor, *, tenant_id: int, order_id: str, lines: list[Pr
             "currency": line.currency,
             "grossUnitPriceCents": line.gross_unit_price_cents,
             "netUnitPriceCents": line.net_unit_price_cents,
+            "customizations": list(line.customizations),
             "ingredientCostCents": line.ingredient_cost_cents,
             "packagingCostCents": line.packaging_cost_cents,
         }

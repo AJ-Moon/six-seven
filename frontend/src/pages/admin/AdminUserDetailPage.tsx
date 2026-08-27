@@ -12,6 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/money";
+import { formatCustomizationText } from "@/lib/customizations";
+import type { SelectedCustomization } from "@/types/menu";
 
 function adminFetch(url: string) {
   const token = localStorage.getItem("admin_token");
@@ -55,7 +57,7 @@ interface ItemRow {
 }
 interface Order {
   id: string;
-  items: { name: string; quantity: number; price: number }[];
+  items: { name: string; quantity: number; price: number; customizations?: SelectedCustomization[] }[];
   total: number;
   status: string;
   orderType: string;
@@ -386,6 +388,11 @@ export default function AdminUserDetailPage() {
                           <div key={i} className="flex justify-between">
                             <span>
                               {item.quantity}× {item.name}
+                              {item.customizations?.length ? (
+                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                  {formatCustomizationText(item.customizations)}
+                                </span>
+                              ) : null}
                             </span>
                             <span>
                               {formatMoney((item.price * item.quantity))}

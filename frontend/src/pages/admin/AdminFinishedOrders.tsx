@@ -21,6 +21,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatMoney } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payment";
+import { formatCustomizationText } from "@/lib/customizations";
+import type { SelectedCustomization } from "@/types/menu";
 
 function adminFetch(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem("admin_token");
@@ -38,6 +40,7 @@ interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  customizations?: SelectedCustomization[];
 }
 interface Branch {
   id: number;
@@ -381,7 +384,14 @@ export default function AdminFinishedOrders() {
                                       key={i}
                                       className="border-b last:border-0"
                                     >
-                                      <td className="py-1">{item.name}</td>
+                                      <td className="py-1">
+                                        <span className="font-medium">{item.name}</span>
+                                        {item.customizations?.length ? (
+                                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                                            {formatCustomizationText(item.customizations)}
+                                          </span>
+                                        ) : null}
+                                      </td>
                                       <td className="py-1 text-center text-muted-foreground">
                                         {item.quantity}×
                                       </td>

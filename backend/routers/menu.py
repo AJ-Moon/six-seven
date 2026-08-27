@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -10,8 +11,15 @@ from services.commerce import effective_sale_price_cents, load_global_discount_c
 router = APIRouter()
 
 CATEGORY_ORDER = [
-    "Food & Snacks",
-    "Combo Meal",
+    "Burgers",
+    "Chicken Tenders",
+    "Loaded Fries",
+    "Fries",
+    "Wraps",
+    "Grilled Sandwiches",
+    "Fresh Salads",
+    "Little 6-7",
+    "Sweet Side",
     "Signature Drinks",
     "Iced Teas",
     "Smoothies",
@@ -20,6 +28,8 @@ CATEGORY_ORDER = [
     "Hot Coffees",
     "Coffee",
     "Desserts",
+    "Food & Snacks",
+    "Combo Meal",
     "Add Ons",
 ]
 
@@ -35,8 +45,8 @@ def _category_order_sql(column: str = "category") -> str:
 
 def _row_to_item(r, global_discount: tuple[int, set[str]] | None = None):
     global_discount_percent, excluded_categories = global_discount or (0, set())
-    gross_cents = int(r[11])
-    explicit_sale_cents = int(r[12]) if r[12] is not None else None
+    gross_cents = int(r[13])
+    explicit_sale_cents = int(r[14]) if r[14] is not None else None
     sale_cents = effective_sale_price_cents(
         gross_cents,
         explicit_sale_cents,
@@ -50,6 +60,8 @@ def _row_to_item(r, global_discount: tuple[int, set[str]] | None = None):
         "salePrice": cents_to_float(sale_cents) if sale_cents is not None else None,
         "image": r[6], "rating": float(r[7]),
         "isSpicy": r[8], "isPopular": r[9], "isFeatured": r[10],
+        "subcategory": r[11] or "",
+        "customizations": r[12] if isinstance(r[12], list) else json.loads(r[12] or "[]"),
     }
 
 
@@ -80,7 +92,7 @@ def get_menu(
 ):
     query = (
         """SELECT id, category, name, description, price, sale_price, image, rating,
-                  is_spicy, is_popular, is_featured,
+                  is_spicy, is_popular, is_featured, subcategory, customizations,
                   COALESCE(price_cents, round(price * 100)::bigint),
                   COALESCE(sale_price_cents,
                            CASE WHEN sale_price IS NULL THEN NULL ELSE round(sale_price * 100)::bigint END)
@@ -117,7 +129,7 @@ def get_menu_item(item_id: int, restaurant_id: int = Depends(get_restaurant_id))
         with conn.cursor() as cur:
             cur.execute(
                 """SELECT id, category, name, description, price, sale_price, image, rating,
-                          is_spicy, is_popular, is_featured,
+                          is_spicy, is_popular, is_featured, subcategory, customizations,
                           COALESCE(price_cents, round(price * 100)::bigint),
                           COALESCE(sale_price_cents,
                                    CASE WHEN sale_price IS NULL THEN NULL ELSE round(sale_price * 100)::bigint END)

@@ -25,6 +25,7 @@ import { getCartId, getSessionId, getVisitorId, track } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
 import { getOrderingStatus, ORDER_HOURS_TEXT } from "@/lib/order-hours";
 import { PAYMENT_METHODS } from "@/lib/payment";
+import { formatCustomizationText } from "@/lib/customizations";
 
 interface Branch {
   id: number;
@@ -332,6 +333,7 @@ export default function CheckoutPage() {
           name: i.name,
           quantity: i.quantity,
           price: i.price,
+          customizations: i.customizations || [],
         })),
         orderType,
         paymentMethod: orderType === "pickup" ? "pay_on_pickup" : paymentMethod,
@@ -802,11 +804,16 @@ export default function CheckoutPage() {
                 <div className="space-y-2 text-sm">
                   {items.map((item) => (
                     <div
-                      key={item.menuItemId}
+                      key={item.lineId}
                       className="flex justify-between text-muted-foreground"
                     >
                       <span className="flex-1 pr-2">
                         {item.name} × {item.quantity}
+                        {item.customizations?.length ? (
+                          <span className="mt-0.5 block text-xs">
+                            {formatCustomizationText(item.customizations)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="shrink-0">
                         {formatMoney((item.price * item.quantity), currencySymbol)}

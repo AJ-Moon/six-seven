@@ -11,12 +11,15 @@ import { useCart } from "@/contexts/CartContext"
 import { toast } from "sonner"
 import { formatMoney } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payment";
+import { formatCustomizationText } from "@/lib/customizations";
+import type { SelectedCustomization } from "@/types/menu";
 
 interface OrderItem {
   menuItemId: number
   name: string
   quantity: number
   price: number
+  customizations?: SelectedCustomization[]
 }
 
 interface Order {
@@ -68,6 +71,7 @@ export default function HistoryPage() {
         name: item.name,
         price: item.price,
         image: "",
+        customizations: item.customizations || [],
       }, item.quantity)
     })
     toast.success("Items added to cart!")
@@ -138,8 +142,15 @@ export default function HistoryPage() {
                   <CardContent className="pt-4">
                     <div className="mb-4 space-y-1.5 text-sm">
                       {order.items.map((item, i) => (
-                        <div key={i} className="flex justify-between text-muted-foreground">
-                          <span>{item.name} × {item.quantity}</span>
+                        <div key={i} className="flex justify-between gap-3 text-muted-foreground">
+                          <span>
+                            {item.name} × {item.quantity}
+                            {item.customizations?.length ? (
+                              <span className="mt-0.5 block text-xs">
+                                {formatCustomizationText(item.customizations)}
+                              </span>
+                            ) : null}
+                          </span>
                           <span>{formatMoney((item.price * item.quantity))}</span>
                         </div>
                       ))}
