@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
 
-const SITE_URL = "https://sixseven.pk";
+export const SITE_URL = "https://sixseven.pk";
 const BRAND_NAME = "Six Seven";
 const DEFAULT_IMAGE = `${SITE_URL}/images/six-seven-logo.png`;
 const STORE_ADDRESS = "75 CCA, DD Block, DHA Phase 4, Lahore";
@@ -51,30 +51,48 @@ const OPENING_HOURS_SPECIFICATION = [
 
 const MENU_KEYWORDS = [
   "Six Seven Lahore",
+  "Six Seven DHA Phase 4",
   "sixseven.pk",
   "fast food Lahore",
+  "fast food near me",
+  "burger near me",
+  "burgers near me",
   "beef burger Lahore",
-  "burger near me Lahore",
-  "fast food near me Lahore",
+  "beef burger near me",
+  "best beef burger in Lahore",
+  "cafes in DHA Lahore",
+  "DHA Phase 4 restaurants",
   "Mighty Zinger Lahore",
   "zinger burger Lahore",
   "Australian beef burger Lahore",
   "beef smash burger Lahore",
+  "Single Stack burger Lahore",
+  "Double Stack burger Lahore",
+  "Triple Stack burger Lahore",
+  "Mushroom Melt burger Lahore",
+  "Smoky Barbecue Melt Lahore",
   "burgers near DHA Phase 4",
-  "DHA Phase 4 restaurants",
   "chicken tenders Lahore",
+  "Golden Tenders Lahore",
+  "Cheesy Tenders Lahore",
   "loaded chicken fries Lahore",
+  "loaded fries Lahore",
+  "curly fries Lahore",
   "crispy chicken wrap Lahore",
+  "wraps near me",
   "grilled sandwich Lahore",
+  "grilled chicken salad Lahore",
+  "creamy Russian salad Lahore",
+  "kids meal Lahore",
   "waffles Lahore",
   "mini pancakes Lahore",
   "coffee Lahore",
-  "coffee near me Lahore",
+  "coffee near me",
+  "cold coffee near me",
   "iced coffee Lahore",
   "iced tea Lahore",
   "smoothies Lahore",
   "frappes Lahore",
-  "loaded fries Lahore",
   "wraps Lahore",
 ];
 
@@ -97,10 +115,15 @@ const ROUTE_META: Record<string, RouteMeta> = {
       "sixseven.pk",
       "fast food Lahore",
       "fast food near me",
+      "burger near me",
+      "burgers near me",
       "beef burger Lahore",
       "beef burger near me",
+      "best beef burger in Lahore",
       "coffee Lahore",
       "coffee near me",
+      "cold coffee near me",
+      "cafes in DHA Lahore",
       "DHA Phase 4 Lahore food",
       "DHA Phase 4 restaurants",
       "late night food Lahore",
@@ -111,7 +134,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   "/menu": {
     title: "Six Seven Food Menu | Burgers, Tenders, Loaded Fries & Coffee Lahore",
     description:
-      "Explore the Six Seven menu: Mighty Zinger, Australian beef burgers, chicken tenders, loaded chicken fries, wraps, grilled sandwiches, salads, mini pancakes, waffles and drinks.",
+      "Explore the Six Seven menu: Mighty Zinger, Australian beef Single/Double/Triple Stack burgers, chicken tenders, loaded chicken fries, wraps, grilled sandwiches, salads, mini pancakes, waffles and drinks.",
     keywords: [
       "Six Seven menu",
       "sixseven.pk menu",
@@ -121,14 +144,27 @@ const ROUTE_META: Record<string, RouteMeta> = {
       "Australian beef burger Lahore",
       "beef burger Lahore",
       "beef burger near me",
+      "best beef burger in Lahore",
+      "burger near me",
+      "burgers near me",
+      "Single Stack burger",
+      "Double Stack burger",
+      "Triple Stack burger",
+      "Mushroom Melt burger",
+      "Smoky Barbecue Melt",
       "chicken burger Lahore",
       "chicken tenders Lahore",
+      "Golden Tenders Lahore",
+      "Cheesy Tenders Lahore",
       "loaded fries Lahore",
       "loaded chicken fries Lahore",
+      "curly fries Lahore",
       "wraps Lahore",
       "wraps near me",
       "grilled sandwich Lahore",
       "fresh salad Lahore",
+      "grilled chicken salad Lahore",
+      "creamy Russian salad Lahore",
       "kids meal Lahore",
       "mini pancakes Lahore",
       "waffles Lahore",
@@ -356,7 +392,7 @@ function setLink(rel: string, href: string) {
   tag.href = href;
 }
 
-function setJsonLd(id: string, value: object) {
+export function setJsonLd(id: string, value: object) {
   let tag = document.getElementById(id) as HTMLScriptElement | null;
   if (!tag) {
     tag = document.createElement("script");
@@ -367,7 +403,7 @@ function setJsonLd(id: string, value: object) {
   tag.text = JSON.stringify(value);
 }
 
-function removeJsonLd(id: string) {
+export function removeJsonLd(id: string) {
   document.getElementById(id)?.remove();
 }
 
@@ -531,7 +567,7 @@ export function SeoMetadata() {
           itemOffered: {
             "@type": "MenuItem",
             name: "Mighty burgers and Australian beef stacks",
-            description: "Six Seven Mighty Zinger, grilled chicken burgers, Australian beef stacks and beef specials in DHA Phase 4 Lahore.",
+            description: "Six Seven Mighty Zinger, grilled chicken burgers, Single Stack, Double Stack, Triple Stack and Australian beef specials in DHA Phase 4 Lahore — among the best beef burgers in Lahore.",
           },
         },
         {
@@ -539,7 +575,15 @@ export function SeoMetadata() {
           itemOffered: {
             "@type": "MenuItem",
             name: "Chicken tenders, loaded fries and wraps",
-            description: "Golden tenders, cheesy tenders, fully loaded chicken fries, crispy wraps and grilled wraps.",
+            description: "Golden Tenders, Cheesy Tenders, Fully Loaded Chicken Fries, crispy chicken wraps and grilled chicken wraps.",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "MenuItem",
+            name: "Salads, kids meals and sweets",
+            description: "Grilled Chicken Salad, Creamy Russian Salad, kids meals, and Mini Pancakes or Waffle with a choice of Chocolate Drip, Oreo Crunch, Dairy Desire, KitKat Crunch or Kinder Bueno.",
           },
         },
         {

@@ -31,6 +31,7 @@ import { track } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
 import { srcSetFor } from "@/lib/images";
 import { MenuItemCustomizer } from "@/components/menu/menu-item-customizer";
+import { SITE_URL, setJsonLd, removeJsonLd } from "@/components/SeoMetadata";
 import type { PublicMenuItem, SelectedCustomization } from "@/types/menu";
 
 const toTitle = (value: string) =>
@@ -125,6 +126,56 @@ export default function MenuPage() {
       }),
     retry: 0,
   });
+
+  // Full, unfiltered menu for search-engine structured data — independent of
+  // whatever category/search state the visitor currently has active, so the
+  // Menu schema always describes the whole menu, not a filtered slice of it.
+  const { data: fullMenuForSchema } = useQuery({
+    queryKey: ["menu-schema-full"],
+    queryFn: () =>
+      fetchJsonWithRetry<PublicMenuItem[]>("/api/menu", undefined, {
+        timeoutMs: 15000,
+        retries: 1,
+      }),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  useEffect(() => {
+    if (!fullMenuForSchema?.length) return;
+    const bySection = new Map<string, PublicMenuItem[]>();
+    for (const item of fullMenuForSchema) {
+      const list = bySection.get(item.category) || [];
+      list.push(item);
+      bySection.set(item.category, list);
+    }
+    setJsonLd("six-seven-menu-page", {
+      "@context": "https://schema.org",
+      "@type": "Menu",
+      "@id": `${SITE_URL}/menu#menu`,
+      name: "Six Seven Menu",
+      url: `${SITE_URL}/menu`,
+      provider: { "@id": `${SITE_URL}/#business` },
+      description:
+        "The full Six Seven menu: Mighty Zinger, Australian beef Single/Double/Triple Stack burgers, chicken tenders, loaded fries, wraps, sandwiches, salads, kids meals, sweets, signature drinks, iced teas, smoothies, frappes and coffee in DHA Phase 4 Lahore.",
+      hasMenuSection: Array.from(bySection.entries()).map(([category, items]) => ({
+        "@type": "MenuSection",
+        name: category,
+        hasMenuItem: items.map((item) => ({
+          "@type": "MenuItem",
+          name: item.name,
+          description: item.isSpicy ? `${item.description} Spicy.` : item.description,
+          image: item.image ? `${SITE_URL}${item.image}` : undefined,
+          offers: {
+            "@type": "Offer",
+            price: (item.salePrice ?? item.price).toFixed(2),
+            priceCurrency: "PKR",
+            availability: "https://schema.org/InStock",
+          },
+        })),
+      })),
+    });
+    return () => removeJsonLd("six-seven-menu-page");
+  }, [fullMenuForSchema]);
 
   const filteredItems = allItems.filter((item) => {
     if (item.price < priceRange[0]) return false;
