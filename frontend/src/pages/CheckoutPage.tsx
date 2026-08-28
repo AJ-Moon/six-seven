@@ -217,7 +217,7 @@ export default function CheckoutPage() {
   }, [customerLat, customerLng, orderType]);
 
   useEffect(() => {
-    fetch("/api/branches/")
+    fetch("/api/branches")
       .then((r) => r.json())
       .then((data) => {
         setBranches(data.filter((b: Branch) => b.isOpen));

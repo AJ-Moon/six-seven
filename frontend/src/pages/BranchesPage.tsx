@@ -74,7 +74,7 @@ export default function BranchesPage() {
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
-    fetch("/api/branches/")
+    fetch("/api/branches")
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setBranches(normalizeBranches(data)))
       .catch(() => setBranches(DEFAULT_BRANCHES))

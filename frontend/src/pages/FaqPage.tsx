@@ -10,7 +10,7 @@ export default function FaqPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/faqs/")
+    fetch("/api/faqs")
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (Array.isArray(data) && data.length) {
@@ -91,4 +91,3 @@ export default function FaqPage() {
     </div>
   )
 }
-
