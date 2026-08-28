@@ -7,6 +7,7 @@ Re-running this is safe: menu rows are matched on (restaurant_id, name).
 """
 import os
 import sys
+import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -284,6 +285,26 @@ SETTINGS = {
     "promo_headline": "Order Online, Your Way",
     "promo_body": "Browse the full food menu, choose your sauces, add a meal upgrade, and get it delivered across DHA or collect fresh from our DHA Phase 4 counter.",
     "global_discount_excluded_categories": "Deals, Combo Meal",
+    "hero_slides": json.dumps(
+        [
+            {
+                "image": "/images/six-seven-home-slide-beef-burgers.png",
+                "headline": "The Best Beef Burgers in Town",
+                "subtext": "Australian beef burgers with 20% off on website and dine-in.",
+            },
+            {
+                "image": "/images/six-seven-home-slide-sandwiches-salads.png",
+                "headline": "Fresh Meets Grilled",
+                "subtext": "Grilled sandwiches and fresh, satisfying salads.",
+            },
+            {
+                "image": "/images/six-seven-home-slide-loaded-fries-tenders.png",
+                "headline": "Crispy Saucy Loaded",
+                "subtext": "Golden tenders and fully loaded chicken fries.",
+            },
+        ],
+        separators=(",", ":"),
+    ),
 }
 
 THEME = {

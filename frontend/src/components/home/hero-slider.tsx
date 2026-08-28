@@ -12,6 +12,30 @@ const DEFAULT_SLIDE = {
   image: "/images/hero-burger.jpg",
 };
 
+const SIX_SEVEN_PROMO_SLIDES = [
+  {
+    id: 1,
+    headline: "The Best Beef Burgers in Town",
+    subheadline: "Australian beef burgers with 20% off on website and dine-in.",
+    image: "/images/six-seven-home-slide-beef-burgers.png",
+  },
+  {
+    id: 2,
+    headline: "Fresh Meets Grilled",
+    subheadline: "Grilled sandwiches and fresh, satisfying salads.",
+    image: "/images/six-seven-home-slide-sandwiches-salads.png",
+  },
+  {
+    id: 3,
+    headline: "Crispy Saucy Loaded",
+    subheadline: "Golden tenders and fully loaded chicken fries.",
+    image: "/images/six-seven-home-slide-loaded-fries-tenders.png",
+  },
+];
+
+const isPromoArtworkSlide = (image: string) =>
+  image.includes("/images/six-seven-home-slide-");
+
 export function HeroSlider() {
   const {
     restaurantName,
@@ -37,21 +61,29 @@ export function HeroSlider() {
       image: slide.image.trim() || DEFAULT_SLIDE.image,
     }));
 
-  // With no slides configured, fall back to the single hero configured under
-  // Admin → Branding rather than the generic built-in copy.
+  // Six Seven's production homepage uses designed promo artwork as the default
+  // carousel. Admin-configured slides still take priority when present.
   const sliderSlides =
     configuredSlides.length > 0
       ? configuredSlides
-      : [
-          {
-            id: 1,
-            headline: heroText?.trim() || slogan?.trim() || DEFAULT_SLIDE.headline,
-            subheadline: heroSubtext?.trim() || DEFAULT_SLIDE.subheadline,
-            image: heroImageUrl || DEFAULT_SLIDE.image,
-          },
-        ];
+      : SIX_SEVEN_PROMO_SLIDES.map((slide) => ({
+          ...slide,
+          headline:
+            slide.headline ||
+            heroText?.trim() ||
+            slogan?.trim() ||
+            DEFAULT_SLIDE.headline,
+          subheadline:
+            slide.subheadline ||
+            heroSubtext?.trim() ||
+            DEFAULT_SLIDE.subheadline,
+          image: slide.image || heroImageUrl || DEFAULT_SLIDE.image,
+        }));
 
   const showSliderControls = sliderSlides.length > 1 && layout !== "minimal";
+  const artworkLayout = sliderSlides.every((slide) =>
+    isPromoArtworkSlide(slide.image),
+  );
 
   const nextSlide = useCallback(() => {
     setCurrent((prev) => (prev + 1) % sliderSlides.length);
@@ -105,7 +137,9 @@ export function HeroSlider() {
     <section
       className={cn(
         "relative w-full overflow-hidden",
-        layout === "modern"
+        artworkLayout
+          ? "aspect-[12/5] min-h-[180px] max-h-[800px] bg-[#003235] sm:min-h-[300px] lg:min-h-[520px]"
+          : layout === "modern"
           ? "h-[420px] sm:h-[560px] lg:h-[680px]"
           : "h-[380px] sm:h-[500px] lg:h-[620px]",
       )}
@@ -121,83 +155,110 @@ export function HeroSlider() {
             index === current ? "opacity-100" : "pointer-events-none opacity-0",
           )}
         >
-          {/* Background Image */}
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${slide.image})` }}
-          >
-            {/* Gradient Overlay */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  layout === "modern"
-                    ? `linear-gradient(100deg, ${primaryColor}D9 0%, ${primaryColor}7A 42%, rgba(0,0,0,0.15) 100%)`
-                    : `linear-gradient(90deg, ${primaryColor}C7 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.2) 100%)`,
-              }}
-            />
-          </div>
-
-          {/* Content */}
-          <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl">
-              <h1
-                className={cn(
-                  "font-serif text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl",
-                  "transform transition-all delay-100 duration-700",
-                  index === current
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-8 opacity-0",
-                )}
+          {isPromoArtworkSlide(slide.image) ? (
+            <Link
+              to="/menu"
+              aria-label={`${slide.headline}. Order now.`}
+              className="absolute inset-0 block"
+            >
+              <img
+                src={slide.image}
+                alt={slide.headline}
+                className="h-full w-full object-contain md:object-cover"
+                decoding="async"
+                fetchPriority={index === 0 ? "high" : "auto"}
+              />
+            </Link>
+          ) : (
+            <>
+              {/* Background Image */}
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${slide.image})` }}
               >
-                {slide.headline}
-              </h1>
-              <p
-                className={cn(
-                  "mt-3 text-base leading-relaxed text-white/90 sm:mt-4 sm:text-xl",
-                  "transform transition-all delay-200 duration-700",
-                  index === current
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-8 opacity-0",
-                )}
-              >
-                {slide.subheadline}
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-3 leading-none sm:mt-8 sm:gap-4">
-                <Button
-                  size="lg"
-                  className="six7-press h-11 px-6 text-sm font-semibold sm:h-12 sm:px-8 sm:text-base"
-                  style={{ backgroundColor: primaryColor }}
-                  asChild
-                >
-                  <Link to="/menu">Order Now</Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="six7-press h-11 border-white/35 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 hover:text-white sm:h-12 sm:px-8 sm:text-base"
-                  asChild
-                >
-                  <Link to="/menu">Explore Menu</Link>
-                </Button>
+                {/* Gradient Overlay */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      layout === "modern"
+                        ? `linear-gradient(100deg, ${primaryColor}D9 0%, ${primaryColor}7A 42%, rgba(0,0,0,0.15) 100%)`
+                        : `linear-gradient(90deg, ${primaryColor}C7 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.2) 100%)`,
+                  }}
+                />
               </div>
-            </div>
-          </div>
+
+              {/* Content */}
+              <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+                <div className="max-w-2xl">
+                  <h1
+                    className={cn(
+                      "font-serif text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl",
+                      "transform transition-all delay-100 duration-700",
+                      index === current
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-8 opacity-0",
+                    )}
+                  >
+                    {slide.headline}
+                  </h1>
+                  <p
+                    className={cn(
+                      "mt-3 text-base leading-relaxed text-white/90 sm:mt-4 sm:text-xl",
+                      "transform transition-all delay-200 duration-700",
+                      index === current
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-8 opacity-0",
+                    )}
+                  >
+                    {slide.subheadline}
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap gap-3 leading-none sm:mt-8 sm:gap-4">
+                    <Button
+                      size="lg"
+                      className="six7-press h-11 px-6 text-sm font-semibold sm:h-12 sm:px-8 sm:text-base"
+                      style={{ backgroundColor: primaryColor }}
+                      asChild
+                    >
+                      <Link to="/menu">Order Now</Link>
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="six7-press h-11 border-white/35 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 hover:text-white sm:h-12 sm:px-8 sm:text-base"
+                      asChild
+                    >
+                      <Link to="/menu">Explore Menu</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       ))}
 
       {/* Scroll Down Indicator */}
-      <div className="absolute bottom-1 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-1 sm:bottom-2">
-        <span className="text-xs font-medium uppercase tracking-widest text-white/70">
-          Scroll for menu
-        </span>
-        <ChevronDown className="h-5 w-5 animate-bounce text-white/70" />
-      </div>
+      {!artworkLayout && (
+        <div className="absolute bottom-1 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-1 sm:bottom-2">
+          <span className="text-xs font-medium uppercase tracking-widest text-white/70">
+            Scroll for menu
+          </span>
+          <ChevronDown className="h-5 w-5 animate-bounce text-white/70" />
+        </div>
+      )}
 
       {/* Slide Indicators */}
       {showSliderControls && (
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-2 sm:bottom-6">
+        <div
+          className={cn(
+            "absolute z-20 flex gap-2",
+            artworkLayout
+              ? "bottom-3 right-4 sm:bottom-5 sm:right-6"
+              : "bottom-5 left-1/2 -translate-x-1/2 sm:bottom-6",
+          )}
+        >
           {sliderSlides.map((_, index) => (
             <button
               key={index}
