@@ -19,9 +19,16 @@ import {
   Lightbulb,
   FlaskConical,
   Rocket,
+  BellRing,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchRestaurantTheme } from "@/contexts/RestaurantContext";
+import {
+  AdminOrderAlertsProvider,
+  useAdminOrderAlerts,
+} from "@/contexts/AdminOrderAlertsContext";
 
 const navItems = [
   { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
@@ -59,6 +66,41 @@ const hiddenNavItems = [
   { label: "Competitors", to: "/admin/competitors", icon: Swords },
 ];
 void hiddenNavItems;
+
+function AdminSoundControl() {
+  const {
+    soundEnabled,
+    soundReady,
+    hasUnpreparedOrder,
+    enableSound,
+    disableSound,
+  } = useAdminOrderAlerts();
+
+  const Icon = !soundEnabled ? VolumeX : soundReady ? Volume2 : BellRing;
+  const label = !soundEnabled
+    ? "Sound off"
+    : soundReady
+      ? hasUnpreparedOrder
+        ? "Alarm on"
+        : "Sound on"
+      : "Enable sound";
+
+  return (
+    <button
+      type="button"
+      onClick={soundEnabled && soundReady ? disableSound : enableSound}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        soundEnabled
+          ? "bg-primary/10 text-primary hover:bg-primary/15"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  );
+}
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -100,7 +142,8 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <AdminOrderAlertsProvider>
+      <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <aside className="flex w-64 flex-col border-r bg-card">
         <div className="flex items-center gap-2 border-b px-6 py-5">
@@ -140,6 +183,7 @@ export default function AdminLayout() {
         </nav>
 
         <div className="border-t px-3 py-4 space-y-2">
+          <AdminSoundControl />
           <div className="px-3 py-2">
             <p className="text-sm font-medium leading-none">
               {adminUser.name || "Admin"}
@@ -164,6 +208,7 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
-    </div>
+      </div>
+    </AdminOrderAlertsProvider>
   );
 }

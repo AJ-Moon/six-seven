@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   RefreshCw,
   Phone,
@@ -10,68 +10,21 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payment";
 import { formatCustomizationText } from "@/lib/customizations";
-import type { SelectedCustomization } from "@/types/menu";
-
-function adminFetch(url: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("admin_token");
-  return fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers ?? {}),
-    },
-  });
-}
-
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: number;
-  category?: string;
-  customizations?: SelectedCustomization[];
-}
-
-interface Order {
-  id: string;
-  userId: string;
-  customerName: string;
-  customerPhone: string;
-  guestName: string;
-  guestPhone: string;
-  items: OrderItem[];
-  subtotal: number;
-  total: number;
-  status: string;
-  orderType: string;
-  paymentMethod: string;
-  branchName: string;
-  address: string;
-  notes: string;
-  createdAt: string;
-  source: string;
-}
+import {
+  adminFetch,
+  normalizeStageStatus,
+  useAdminOrderAlerts,
+  type Order,
+} from "@/contexts/AdminOrderAlertsContext";
 
 const STATUS_STAGES = ["received", "preparing", "ready", "delivered"] as const;
 type StageStatus = (typeof STATUS_STAGES)[number];
-type BrowserWindowWithAudio = Window &
-  typeof globalThis & {
-    webkitAudioContext?: typeof AudioContext;
-  };
-type ActiveOrderAlarm = {
-  gain: GainNode;
-  oscillators: OscillatorNode[];
-  sweepTimer: number;
-};
-
 const STAGE_LABELS: Record<StageStatus, string> = {
   received: "Received",
   preparing: "Preparing",
@@ -98,13 +51,6 @@ const STATUS_CONFIG: Record<StageStatus, { label: string; color: string }> = {
   },
 };
 
-function normalizeStageStatus(status: string): StageStatus {
-  if (status === "delivered") return "delivered";
-  if (status === "ready" || status === "out_for_delivery") return "ready";
-  if (status === "preparing") return "preparing";
-  return "received";
-}
-
 const ORDER_TYPE_COLOR: Record<string, string> = {
   delivery: "bg-blue-50 text-blue-700 border-blue-200",
   pickup: "bg-amber-50 text-amber-700 border-amber-200",
@@ -118,237 +64,21 @@ function timeAgo(isoDate: string) {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
-/** Decode the restaurant_id claim from the stored admin JWT (no verification needed client-side). */
-function getRestaurantId(): number {
-  try {
-    const token = localStorage.getItem("admin_token");
-    if (!token) return 1;
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return Number(payload.restaurant_id ?? 1);
-  } catch {
-    return 1;
-  }
-}
-
 export default function AdminCurrentOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    orders,
+    setOrders,
+    loading,
+    fetchOrders,
+    realtimeStatus,
+    soundEnabled,
+    soundReady,
+    hasUnpreparedOrder,
+    enableSound,
+    disableSound,
+  } = useAdminOrderAlerts();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("admin_order_sound") !== "off";
-  });
-  const [soundReady, setSoundReady] = useState(false);
-  const [realtimeStatus, setRealtimeStatus] = useState<
-    "connecting" | "live" | "off"
-  >("connecting");
-  // Keep a stable ref so the realtime callback can always call the latest fetchOrders
-  const fetchOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve());
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const alarmRef = useRef<ActiveOrderAlarm | null>(null);
-
-  const fetchOrders = async (showSpinner = true) => {
-    if (showSpinner) setLoading(true);
-    try {
-      const res = await adminFetch("/api/admin/orders/current");
-      if (res.ok) setOrders(await res.json());
-    } finally {
-      if (showSpinner) setLoading(false);
-    }
-  };
-
-  fetchOrdersRef.current = () => fetchOrders(false);
-
-  const getAudioContext = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as BrowserWindowWithAudio).webkitAudioContext;
-    if (!AudioContextClass) return null;
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContextClass();
-    }
-    return audioContextRef.current;
-  }, []);
-
-  const stopOrderAlarm = useCallback(() => {
-    const alarm = alarmRef.current;
-    if (!alarm) return;
-
-    window.clearInterval(alarm.sweepTimer);
-    alarm.oscillators.forEach((osc) => {
-      try {
-        osc.stop();
-      } catch {
-        // Already stopped.
-      }
-      osc.disconnect();
-    });
-    alarm.gain.disconnect();
-    alarmRef.current = null;
-  }, []);
-
-  const startOrderAlarm = useCallback(async () => {
-    const ctx = getAudioContext();
-    if (!ctx) return false;
-
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
-    if (alarmRef.current) {
-      setSoundReady(true);
-      return true;
-    }
-
-    const now = ctx.currentTime;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.34, now);
-    gain.connect(ctx.destination);
-
-    const mainOsc = ctx.createOscillator();
-    mainOsc.type = "square";
-    mainOsc.frequency.setValueAtTime(760, now);
-    mainOsc.connect(gain);
-
-    const overtoneOsc = ctx.createOscillator();
-    overtoneOsc.type = "triangle";
-    overtoneOsc.frequency.setValueAtTime(1140, now);
-    overtoneOsc.connect(gain);
-
-    const sweep = (high: boolean) => {
-      const sweepStart = ctx.currentTime;
-      mainOsc.frequency.cancelScheduledValues(sweepStart);
-      overtoneOsc.frequency.cancelScheduledValues(sweepStart);
-      mainOsc.frequency.setValueAtTime(mainOsc.frequency.value, sweepStart);
-      overtoneOsc.frequency.setValueAtTime(overtoneOsc.frequency.value, sweepStart);
-      mainOsc.frequency.exponentialRampToValueAtTime(high ? 980 : 760, sweepStart + 0.32);
-      overtoneOsc.frequency.exponentialRampToValueAtTime(high ? 1470 : 1140, sweepStart + 0.32);
-      gain.gain.cancelScheduledValues(sweepStart);
-      gain.gain.setValueAtTime(gain.gain.value, sweepStart);
-      gain.gain.linearRampToValueAtTime(high ? 0.42 : 0.3, sweepStart + 0.16);
-    };
-
-    mainOsc.start(now);
-    overtoneOsc.start(now);
-    let high = false;
-    sweep(high);
-    const sweepTimer = window.setInterval(() => {
-      high = !high;
-      sweep(high);
-    }, 650);
-
-    alarmRef.current = {
-      gain,
-      oscillators: [mainOsc, overtoneOsc],
-      sweepTimer,
-    };
-
-    mainOsc.addEventListener("ended", () => {
-      if (alarmRef.current?.oscillators.includes(mainOsc)) {
-        alarmRef.current = null;
-      }
-    });
-
-    setSoundReady(true);
-    return true;
-  }, [getAudioContext]);
-
-  const hasUnpreparedOrder = orders.some(
-    (order) => normalizeStageStatus(order.status) === "received",
-  );
-
-  const enableSound = async () => {
-    setSoundEnabled(true);
-    localStorage.setItem("admin_order_sound", "on");
-    const ctx = getAudioContext();
-    const ready = await ctx
-      ?.resume()
-      .then(() => true)
-      .catch(() => false);
-    setSoundReady(Boolean(ready));
-    if (ready && hasUnpreparedOrder) {
-      void startOrderAlarm().catch(() => setSoundReady(false));
-    }
-  };
-
-  const disableSound = () => {
-    setSoundEnabled(false);
-    setSoundReady(false);
-    localStorage.setItem("admin_order_sound", "off");
-    stopOrderAlarm();
-  };
-
-  useEffect(() => {
-    fetchOrders();
-
-    // Polling is the baseline: it works no matter where Postgres is hosted.
-    // Supabase Realtime, when configured, only makes refreshes quicker — it
-    // cannot be relied on, since it observes the Supabase project's own
-    // database and this backend may point somewhere else entirely.
-    const poll = window.setInterval(() => fetchOrdersRef.current(), 15000);
-
-    let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null =
-      null;
-    if (supabase) {
-      const restaurantId = getRestaurantId();
-      const onChange = { schema: "public", table: "orders", filter: `restaurant_id=eq.${restaurantId}` } as const;
-      channel = supabase
-        .channel(`orders-live-${restaurantId}`)
-        .on("postgres_changes", { event: "INSERT", ...onChange }, () =>
-          fetchOrdersRef.current(),
-        )
-        .on("postgres_changes", { event: "UPDATE", ...onChange }, () =>
-          fetchOrdersRef.current(),
-        )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") setRealtimeStatus("live");
-          else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
-            setRealtimeStatus("off");
-          }
-        });
-    } else {
-      setRealtimeStatus("off");
-    }
-
-    return () => {
-      window.clearInterval(poll);
-      if (channel) supabase?.removeChannel(channel);
-      stopOrderAlarm();
-    };
-  }, [stopOrderAlarm]);
-
-  useEffect(() => {
-    if (!soundEnabled) return;
-
-    const unlock = () => {
-      void getAudioContext()
-        ?.resume()
-        .then(() => setSoundReady(true))
-        .catch(() => setSoundReady(false));
-    };
-
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
-  }, [getAudioContext, soundEnabled]);
-
-  useEffect(() => {
-    if (!soundEnabled || !hasUnpreparedOrder) {
-      stopOrderAlarm();
-      return;
-    }
-
-    void startOrderAlarm().catch(() => setSoundReady(false));
-
-    return () => {
-      stopOrderAlarm();
-    };
-  }, [hasUnpreparedOrder, soundEnabled, startOrderAlarm, stopOrderAlarm]);
 
   const updateStatus = async (orderId: string, status: string) => {
     setUpdatingId(orderId);
