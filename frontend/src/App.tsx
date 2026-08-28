@@ -13,7 +13,6 @@ import { SeoMetadata } from "@/components/SeoMetadata";
 // ─── Route-level code splitting ─────────────────────────────────────────────
 // Each page is loaded on demand. Initial JS bundle drops by ~60%.
 const HomePage = lazy(() => import("@/pages/HomePage"));
-const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const BranchesPage = lazy(() => import("@/pages/BranchesPage"));
 const CareersPage = lazy(() => import("@/pages/CareersPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
@@ -102,7 +101,7 @@ export default function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
+            <Route path="/about" element={<Navigate to="/" replace />} />
             <Route path="/branches" element={<BranchesPage />} />
             <Route path="/careers" element={<CareersPage />} />
             <Route path="/contact" element={<ContactPage />} />

@@ -2,7 +2,7 @@
  * Writes one static HTML file per public route after the Vite build.
  *
  * The app is a single-page app, so every URL is served the same index.html.
- * Before React runs, a crawler asking for /branches or /about receives the
+ * Before React runs, a crawler asking for /branches or /contact receives the
  * homepage's title, description, canonical and body copy — so those pages have
  * no distinct content to index at the moment they are first fetched. Google
  * does execute JavaScript eventually, but it is slower, less reliable, and
@@ -39,14 +39,6 @@ const ROUTES = [
       "Find the Six Seven branch at 75 CCA, DD Block, DHA Phase 4 Lahore with directions, timings, pickup and delivery details.",
     h1: "Six Seven Branch — 75 CCA, DD Block, DHA Phase 4, Lahore",
     body: "Six Seven is located at 75 CCA, DD Block, DHA Phase 4, Lahore. Call 0324-6756767. Delivery covers a 5 km radius around DHA Phase 4, and pickup is available from the counter. Open Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM and Sunday 5 PM-1:30 AM.",
-  },
-  {
-    path: "/about",
-    title: "About Six Seven | Good Food, Good Coffee, Good Mood",
-    description:
-      "Learn about Six Seven, a Lahore cafe and fast food brand serving burgers, loaded snacks, coffee and signature drinks.",
-    h1: "About Six Seven, a DHA Phase 4 Lahore cafe and fast food brand",
-    body: "Six Seven serves Australian beef burgers, chicken burgers, loaded snacks, specialty coffee and signature drinks from DHA Phase 4, Lahore. Good Food. Good Coffee. Good Mood.",
   },
   {
     path: "/contact",
@@ -156,7 +148,6 @@ function buildPage(template, route) {
           <a href="/menu">Menu</a>
           <a href="/branches">Branch Locator</a>
           <a href="/contact">Contact Us</a>
-          <a href="/about">About Us</a>
           <a href="/faq">FAQ</a>
           <a href="/rewards">Rewards</a>
         </nav>

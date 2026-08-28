@@ -156,7 +156,7 @@ export default function ProfilePage() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 234 567 8900"
+                    placeholder="Your phone number"
                   />
                   <p className="text-xs text-muted-foreground">
                     Used for order tracking. Keep it updated.

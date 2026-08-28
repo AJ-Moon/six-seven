@@ -34,7 +34,6 @@ const publicNavLinks = [
   { href: "/menu", label: "Menu", icon: UtensilsCrossed },
   { href: "/branches", label: "Branch Locator", icon: MapPin },
   { href: "/contact", label: "Contact Us", icon: Phone },
-  { href: "/about", label: "About Us", icon: Star },
   { href: "/faq", label: "FAQ", icon: CircleHelp },
   { href: "/track", label: "Track Order", icon: Truck, privateAction: true },
 ];

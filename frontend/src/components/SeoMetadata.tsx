@@ -38,11 +38,6 @@ const SITE_NAVIGATION = [
     description: "Customer support, order help and brand inquiries.",
   },
   {
-    name: "About Us",
-    url: `${SITE_URL}/about`,
-    description: "Six Seven brand story and Lahore cafe positioning.",
-  },
-  {
     name: "FAQ",
     url: `${SITE_URL}/faq`,
     description: "Ordering, delivery, pickup and payment questions.",
@@ -232,20 +227,6 @@ const ROUTE_META: Record<string, RouteMeta> = {
       "Six Seven timings",
     ],
     pageType: "FAQPage",
-  },
-  "/about": {
-    title: "About Six Seven | Good Food, Good Coffee, Good Mood",
-    description:
-      "Learn about Six Seven, a Lahore cafe and fast food brand serving burgers, loaded snacks, coffee and signature drinks.",
-    keywords: [
-      "About Six Seven",
-      "Six Seven Lahore brand",
-      "Lahore cafe",
-      "fast food cafe Lahore",
-      "Good Food Good Coffee Good Mood",
-      "burger and coffee Lahore",
-    ],
-    pageType: "AboutPage",
   },
   "/privacy": {
     title: "Privacy Policy | Six Seven",

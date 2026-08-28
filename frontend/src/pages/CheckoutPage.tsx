@@ -460,7 +460,7 @@ export default function CheckoutPage() {
                         <Label htmlFor="guestName">Full Name *</Label>
                         <Input
                           id="guestName"
-                          placeholder="John Doe"
+                          placeholder="Your name"
                           value={guestName}
                           onChange={(e) => setGuestName(e.target.value)}
                           required
@@ -471,7 +471,7 @@ export default function CheckoutPage() {
                         <Input
                           id="guestPhone"
                           type="tel"
-                          placeholder="+1 234 567 8900"
+                          placeholder="Your phone number"
                           value={guestPhone}
                           onChange={(e) => setGuestPhone(e.target.value)}
                           required
@@ -480,13 +480,13 @@ export default function CheckoutPage() {
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="guestEmail">Email (optional)</Label>
-                      <Input
-                        id="guestEmail"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                      />
+                        <Input
+                          id="guestEmail"
+                          type="email"
+                          placeholder="Your email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                        />
                     </div>
                   </CardContent>
                 </Card>

@@ -123,7 +123,7 @@ export default function ContactPage() {
                         <Input
                           id="firstName"
                           name="firstName"
-                          placeholder="John"
+                          placeholder="Your first name"
                           required
                         />
                       </div>
@@ -132,7 +132,7 @@ export default function ContactPage() {
                         <Input
                           id="lastName"
                           name="lastName"
-                          placeholder="Doe"
+                          placeholder="Your last name"
                           required
                         />
                       </div>
@@ -143,7 +143,7 @@ export default function ContactPage() {
                         id="email"
                         name="email"
                         type="email"
-                        placeholder="john@example.com"
+                        placeholder="Your email"
                         required
                       />
                     </div>

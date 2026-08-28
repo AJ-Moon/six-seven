@@ -134,11 +134,17 @@ export default function FranchisePage() {
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">First Name</label>
-                    <Input placeholder="John" className="bg-background" />
+                    <Input
+                      placeholder="Your first name"
+                      className="bg-background"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Last Name</label>
-                    <Input placeholder="Doe" className="bg-background" />
+                    <Input
+                      placeholder="Your last name"
+                      className="bg-background"
+                    />
                   </div>
                 </div>
 
@@ -146,7 +152,7 @@ export default function FranchisePage() {
                   <label className="text-sm font-medium">Email Address</label>
                   <Input
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="Your email"
                     className="bg-background"
                   />
                 </div>
@@ -155,7 +161,7 @@ export default function FranchisePage() {
                   <label className="text-sm font-medium">Phone Number</label>
                   <Input
                     type="tel"
-                    placeholder={phone || "(555) 123-4567"}
+                    placeholder="Your phone number"
                     className="bg-background"
                   />
                 </div>

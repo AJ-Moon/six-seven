@@ -6,7 +6,6 @@ import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
 
 const footerLinks = {
   company: [
-    { label: "About Us", href: "/about" },
     { label: "Contact", href: "/contact" },
     { label: "Careers", href: "/careers" },
     { label: "Franchise", href: "/franchise" },

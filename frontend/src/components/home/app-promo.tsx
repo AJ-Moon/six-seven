@@ -25,7 +25,7 @@ export function AppPromo() {
                           Good evening
                         </p>
                         <p className="font-serif text-lg font-bold text-primary-foreground">
-                          John Doe
+                          Your Name
                         </p>
                       </div>
                       <div className="h-10 w-10 rounded-full bg-primary-foreground/20" />

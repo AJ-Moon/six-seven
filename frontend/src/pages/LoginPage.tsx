@@ -79,11 +79,20 @@ export default function LoginPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name *</Label>
-                      <Input id="firstName" name="firstName" placeholder="John" required />
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        placeholder="Your first name"
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" name="lastName" placeholder="Doe" />
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        placeholder="Your last name"
+                      />
                     </div>
                   </div>
                 )}
@@ -91,7 +100,12 @@ export default function LoginPage() {
                 {!isLogin && (
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" name="phone" type="tel" placeholder="+1 234 567 8900" />
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="Your phone number"
+                    />
                   </div>
                 )}
 
@@ -99,7 +113,14 @@ export default function LoginPage() {
                   <Label htmlFor="email">Email *</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="email" name="email" type="email" placeholder="you@example.com" className="pl-10" required />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Your email"
+                      className="pl-10"
+                      required
+                    />
                   </div>
                 </div>
 
