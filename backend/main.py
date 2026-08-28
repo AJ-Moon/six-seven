@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
+import mimetypes
 import os
 from pathlib import Path
 
@@ -27,6 +28,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Six Seven API", version="1.0.0", lifespan=lifespan)
+
+# Python's mimetypes table does not know these on every platform, and without
+# them StaticFiles labels every menu photo application/octet-stream. Google
+# Images skips images served that way and social scrapers refuse them as
+# og:image, so the whole menu was invisible to image search.
+mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("image/avif", ".avif")
+mimetypes.add_type("image/svg+xml", ".svg")
 
 _backend_dir = Path(__file__).resolve().parent
 _static_dir = static_dir()

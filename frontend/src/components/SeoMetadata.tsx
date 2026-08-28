@@ -1,10 +1,22 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
+import { ORDER_HOURS_SCHEMA } from "@/lib/order-hours";
 
 export const SITE_URL = "https://sixseven.pk";
 const BRAND_NAME = "Six Seven";
-const DEFAULT_IMAGE = `${SITE_URL}/images/six-seven-logo.png`;
+// A social card showing food gets clicked; one showing a logo does not. Google
+// also wants several images per local business, in different aspect ratios.
+const DEFAULT_IMAGE = `${SITE_URL}/static/uploads/double-stack.webp`;
+const BUSINESS_IMAGES = [
+  `${SITE_URL}/static/uploads/double-stack.webp`,
+  `${SITE_URL}/static/uploads/mighty-zinger.webp`,
+  `${SITE_URL}/static/uploads/triple-stack.webp`,
+  `${SITE_URL}/images/six-seven-logo.png`,
+];
+const LOGO_IMAGE = `${SITE_URL}/images/six-seven-logo.png`;
+// Delivery is a 5 km circle around the branch, not the whole city. Claiming
+// Lahore invites irrelevant impressions and weakens local relevance.
+const DELIVERY_RADIUS_METRES = 5000;
 const STORE_ADDRESS = "75 CCA, DD Block, DHA Phase 4, Lahore";
 const PHONE_TEXT = "+923246756767";
 const ORDERING_URL = `${SITE_URL}/menu`;
@@ -449,6 +461,8 @@ export function SeoMetadata() {
     setMeta("og:description", meta.description, "property");
     setMeta("og:url", canonical, "property");
     setMeta("og:image", DEFAULT_IMAGE, "property");
+    setMeta("og:image:alt", "A Six Seven Australian beef burger", "property");
+    setMeta("twitter:image:alt", "A Six Seven Australian beef burger");
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", meta.title);
     setMeta("twitter:description", meta.description);
@@ -506,9 +520,9 @@ export function SeoMetadata() {
       name: BRAND_NAME,
       url: SITE_URL,
       telephone: PHONE_TEXT,
-      image: DEFAULT_IMAGE,
-      logo: DEFAULT_IMAGE,
-      priceRange: "Rs.",
+      image: BUSINESS_IMAGES,
+      logo: LOGO_IMAGE,
+      priceRange: "Rs. 100 - Rs. 1530",
       keywords: MENU_KEYWORDS.join(", "),
       servesCuisine: [
         "Fast food",
@@ -531,8 +545,14 @@ export function SeoMetadata() {
         longitude: 74.3822137,
       },
       areaServed: {
-        "@type": "City",
-        name: "Lahore",
+        "@type": "GeoCircle",
+        geoMidpoint: {
+          "@type": "GeoCoordinates",
+          latitude: 31.4641372,
+          longitude: 74.3822137,
+        },
+        geoRadius: DELIVERY_RADIUS_METRES,
+        description: "5 km delivery radius around DHA Phase 4, Lahore",
       },
       contactPoint: {
         "@type": "ContactPoint",
@@ -544,7 +564,7 @@ export function SeoMetadata() {
         "https://facebook.com/sixseven.pk",
       ],
       hasMap: "https://maps.google.com/?q=31.4641372,74.3822137",
-      openingHours: ORDER_HOURS_TEXT,
+      openingHours: ORDER_HOURS_SCHEMA,
       openingHoursSpecification: OPENING_HOURS_SPECIFICATION.map((hours) => ({
         "@type": "OpeningHoursSpecification",
         ...hours,

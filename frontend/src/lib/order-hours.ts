@@ -1,6 +1,19 @@
 export const ORDER_HOURS_TEXT =
   "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM";
 
+/**
+ * The same hours in the format schema.org actually parses. ORDER_HOURS_TEXT is
+ * written for humans and is not valid structured data — feeding it to
+ * `openingHours` made Google discard the field, which is why the hours never
+ * showed in search results.
+ */
+export const ORDER_HOURS_SCHEMA = [
+  "Mo-Th 12:00-01:30",
+  "Fr 14:00-02:30",
+  "Sa 12:00-02:30",
+  "Su 17:00-01:30",
+];
+
 const KARACHI_TIMEZONE = "Asia/Karachi";
 const WEEKDAY_INDEX: Record<string, number> = {
   Sun: 0,

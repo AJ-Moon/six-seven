@@ -148,6 +148,7 @@ export default function MenuPage() {
       list.push(item);
       bySection.set(item.category, list);
     }
+    const schemaPrices = fullMenuForSchema.map((item) => item.salePrice ?? item.price);
     setJsonLd("six-seven-menu-page", {
       "@context": "https://schema.org",
       "@type": "Menu",
@@ -157,9 +158,22 @@ export default function MenuPage() {
       provider: { "@id": `${SITE_URL}/#business` },
       description:
         "The full Six Seven menu: Mighty Zinger, Australian beef Single/Double/Triple Stack burgers, chicken tenders, loaded fries, wraps, sandwiches, salads, kids meals, sweets, signature drinks, iced teas, smoothies, frappes and coffee in DHA Phase 4 Lahore.",
+      inLanguage: "en-PK",
+      // Search engines use the aggregate range to show "Rs. 100 - Rs. 1530"
+      // alongside the listing; without it there is no price signal at all.
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "PKR",
+        lowPrice: Math.min(...schemaPrices).toFixed(2),
+        highPrice: Math.max(...schemaPrices).toFixed(2),
+        offerCount: String(fullMenuForSchema.length),
+      },
       hasMenuSection: Array.from(bySection.entries()).map(([category, items]) => ({
         "@type": "MenuSection",
         name: category,
+        // A section that links to its own filtered view is a crawlable
+        // destination rather than a label.
+        url: `${SITE_URL}/menu?category=${encodeURIComponent(category)}`,
         hasMenuItem: items.map((item) => ({
           "@type": "MenuItem",
           name: item.name,

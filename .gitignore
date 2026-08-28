@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Build caches
+*.tsbuildinfo
+.vite/
+
+# OS noise
+.DS_Store
+
+# Python bytecode
+__pycache__/
+*.pyc

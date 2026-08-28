@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prerender-seo.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "generate:api": "PYTHONPATH=../backend python3 ../backend/scripts/export_openapi.py openapi.json && openapi-typescript openapi.json -o src/types/api.generated.ts"
