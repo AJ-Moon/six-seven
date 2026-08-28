@@ -35,6 +35,7 @@ def _is_placeholder_branch(branch: dict) -> bool:
     return "flavor hub" in text or "555-01" in text or "new york" in text
 
 
+@router.get("")
 @router.get("/")
 def get_branches(restaurant_id: int = Depends(get_restaurant_id)):
     with get_db() as conn:

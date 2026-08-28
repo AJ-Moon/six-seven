@@ -18,6 +18,7 @@ class ContactRequest(BaseModel):
     model_config = {"str_strip_whitespace": True}
 
 
+@router.post("")
 @router.post("/")
 def contact(body: ContactRequest, restaurant_id: int = Depends(get_restaurant_id)):
     with get_db() as conn:
@@ -27,4 +28,3 @@ def contact(body: ContactRequest, restaurant_id: int = Depends(get_restaurant_id
                 (restaurant_id, body.name, body.email, body.phone or "", body.subject, body.message),
             )
     return {"success": True, "message": "Message received. We'll get back to you shortly."}
-

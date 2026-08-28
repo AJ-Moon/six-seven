@@ -93,6 +93,7 @@ def _default_content(slug: str):
     }
 
 
+@router.get("")
 @router.get("/")
 def get_faqs(restaurant_id: int = Depends(get_restaurant_id)):
     with get_db() as conn:
