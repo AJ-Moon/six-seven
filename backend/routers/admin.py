@@ -5,7 +5,6 @@ import io
 import json as _json
 import os
 import uuid
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -65,7 +64,6 @@ def _sign_admin_token(admin_id: str, email: str, role: str, restaurant_id: int) 
     secret = os.getenv("JWT_SECRET")
     if not secret:
         raise HTTPException(status_code=500, detail="JWT_SECRET not configured")
-    expire = datetime.utcnow() + timedelta(hours=12)
     return jwt.encode(
         {
             "id": admin_id,
@@ -73,7 +71,6 @@ def _sign_admin_token(admin_id: str, email: str, role: str, restaurant_id: int) 
             "role": role,
             "type": "admin",
             "restaurant_id": restaurant_id,
-            "exp": expire,
         },
         secret,
         algorithm="HS256",

@@ -13,8 +13,7 @@ function isValidAdminToken(token: string | null): boolean {
     const payload = JSON.parse(atob(base64));
     return (
       payload.type === "admin" &&
-      typeof payload.exp === "number" &&
-      payload.exp > Date.now() / 1000
+      (typeof payload.exp !== "number" || payload.exp > Date.now() / 1000)
     );
   } catch {
     return false;

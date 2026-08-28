@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timedelta
 from typing import Optional
 
 import bcrypt as _bcrypt
@@ -39,9 +38,8 @@ def _sign_token(user_id: str, email: str, restaurant_id: int) -> str:
     secret = os.getenv("JWT_SECRET")
     if not secret:
         raise HTTPException(status_code=500, detail="JWT_SECRET not configured")
-    expire = datetime.utcnow() + timedelta(days=7)
     return jwt.encode(
-        {"id": user_id, "email": email, "type": "user", "restaurant_id": restaurant_id, "exp": expire},
+        {"id": user_id, "email": email, "type": "user", "restaurant_id": restaurant_id},
         secret,
         algorithm="HS256",
     )
