@@ -90,7 +90,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     track("item_added_to_cart", {
       itemId: item.menuItemId,
       cartId: getCartId(),
-      properties: { quantity: qty, displayedPrice: item.price, lineId },
+      // name feeds the pixel's content_name — without it Meta only ever sees a bare id
+      properties: { quantity: qty, displayedPrice: item.price, name: item.name, lineId },
     })
     setItems((prev) => {
       const existing = prev.find((i) => i.lineId === lineId)

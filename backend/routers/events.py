@@ -9,6 +9,7 @@ from db import get_db
 from dependencies.auth import TenantContext, resolve_public_tenant
 from services.events import CLIENT_EVENT_NAMES, insert_event
 from services.jobs import enqueue_job
+from services.meta_capi import should_forward as should_forward_to_meta
 
 router = APIRouter()
 
@@ -132,6 +133,50 @@ def _validate_entity_ownership(cursor, tenant_id: int, event: EventInput) -> Non
         if not cursor.fetchone():
             raise ValueError("missionId does not belong to this restaurant")
 
+def _client_ip(request: Request) -> Optional[str]:
+    """Real client IP, honouring the proxy header the app is deployed behind."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()[:64]
+    return request.client.host if request.client else None
+
+
+def _enqueue_meta_capi(cursor, tenant_id: int, event: EventInput, request: Request) -> None:
+    """Queue a server-side twin of this event for Meta's Conversions API.
+
+    Fire-and-forget: the worker owns delivery and retries, so a slow or failing
+    Graph API call never delays event ingestion. Inert until
+    META_CAPI_ACCESS_TOKEN is configured.
+    """
+    if not should_forward_to_meta(event.eventName, event.properties):
+        return
+    # fbc is the click identifier Meta expects, rebuilt from the fbclid it put
+    # on the ad's landing URL.
+    fbc = None
+    if event.clickId:
+        fbc = f"fb.1.{int(event.occurredAt.timestamp() * 1000)}.{event.clickId}"
+    enqueue_job(
+        cursor,
+        tenant_id=tenant_id,
+        job_name="meta.capi_forward",
+        idempotency_key=f"meta_capi:{event.eventId}",
+        metadata={
+            "eventId": event.eventId,
+            "eventName": event.eventName,
+            "eventTime": int(event.occurredAt.timestamp()),
+            # Meta wants an absolute URL; the Referer on this POST is the page
+            # the customer was on, query string and UTMs included.
+            "eventSourceUrl": (request.headers.get("referer") or "")[:2000] or None,
+            "itemId": event.itemId,
+            "orderId": event.orderId,
+            "properties": event.properties,
+            "clientIp": _client_ip(request),
+            "userAgent": request.headers.get("user-agent", "")[:500] or None,
+            "fbc": fbc,
+            "fbp": event.properties.get("fbp"),
+        },
+    )
+
 
 @router.post("/events/batch")
 def ingest_event_batch(
@@ -186,6 +231,7 @@ def ingest_event_batch(
                     )
                     if inserted:
                         accepted += 1
+                        _enqueue_meta_capi(cur, tenant.id, event, request)
                         results.append({"index": index, "eventId": event.eventId, "status": "accepted"})
                     else:
                         duplicates += 1

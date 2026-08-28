@@ -83,6 +83,16 @@ function getAttribution() {
   return attribution
 }
 
+/**
+ * The Meta pixel's own first-party cookie. Forwarding it with the server-side
+ * Conversions API copy is the single biggest lift to Meta's match quality, and
+ * it identifies a browser rather than a person.
+ */
+function getFbp(): string | undefined {
+  const match = document.cookie.match(/(?:^|;\s*)_fbp=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : undefined
+}
+
 function deviceClass() {
   const width = window.innerWidth
   return width < 768 ? "mobile" : width < 1024 ? "tablet" : "desktop"
@@ -114,39 +124,90 @@ function initializeMetaPixel() {
   metaPixelInitialized = true
 }
 
-function trackMetaPixelEvent(eventName: string, properties: EventProperties = {}) {
+/**
+ * Mirrors a subset of our own events onto the Meta pixel.
+ *
+ * Only the six events below are forwarded. Everything else we track — item
+ * impressions, chat opens, cart removals — stays first-party: Meta cannot
+ * optimise against them, and forwarding them as custom events buried the
+ * signal that matters (browsing one menu category used to emit nine
+ * `item_impression` custom events in a single view).
+ *
+ * `eventId` is passed as Meta's `eventID` so a matching Conversions API call
+ * from the server is de-duplicated against this browser event.
+ *
+ * A note on `value`, since the two differ deliberately: InitiateCheckout
+ * reports merchandise subtotal, Purchase reports what the customer actually
+ * paid (delivery included), because that is the revenue ROAS should be
+ * measured against.
+ */
+function trackMetaPixelEvent(
+  eventName: string,
+  properties: EventProperties = {},
+  eventId?: string,
+) {
   if (!window.fbq) return
 
-  if (eventName === "page_viewed") {
-    window.fbq("track", "PageView")
-    return
-  }
-  if (eventName === "item_added_to_cart") {
-    window.fbq("track", "AddToCart", {
-      content_ids: properties.itemId ? [String(properties.itemId)] : undefined,
-      content_name: properties.name,
-      currency: "PKR",
-      value: properties.displayedPrice,
-    })
-    return
-  }
-  if (eventName === "checkout_started") {
-    window.fbq("track", "InitiateCheckout", {
-      currency: "PKR",
-      num_items: properties.itemCount,
-      value: properties.displayedTotal,
-    })
-    return
-  }
-  if (eventName === "checkout_step_completed" && properties.step === "ORDER_CONFIRMED") {
-    window.fbq("track", "Purchase", {
-      currency: properties.currency || "PKR",
-      value: properties.total,
-    })
-    return
+  const meta = eventId ? { eventID: eventId } : undefined
+  const send = (name: string, params?: Record<string, unknown>) => {
+    if (meta) window.fbq!("track", name, params, meta)
+    else window.fbq!("track", name, params)
   }
 
-  window.fbq("trackCustom", eventName, properties)
+  switch (eventName) {
+    case "page_viewed":
+      send("PageView")
+      return
+
+    case "category_viewed":
+      send("ViewContent", {
+        content_type: "product_group",
+        content_category: properties.categoryId,
+      })
+      return
+
+    case "search_performed":
+      send("Search", {
+        search_string: properties.query,
+        content_category: properties.categoryId,
+      })
+      return
+
+    case "item_added_to_cart": {
+      const id = properties.itemId ? String(properties.itemId) : undefined
+      const price = properties.displayedPrice
+      const qty = typeof properties.quantity === "number" ? properties.quantity : 1
+      send("AddToCart", {
+        content_type: "product",
+        content_ids: id ? [id] : undefined,
+        content_name: properties.name,
+        contents: id ? [{ id, quantity: qty, item_price: price }] : undefined,
+        currency: "PKR",
+        value: typeof price === "number" ? price * qty : price,
+      })
+      return
+    }
+
+    case "checkout_started":
+      send("InitiateCheckout", {
+        currency: "PKR",
+        num_items: properties.itemCount,
+        value: properties.displayedTotal,
+      })
+      return
+
+    case "checkout_step_completed":
+      if (properties.step !== "ORDER_CONFIRMED") return
+      send("Purchase", {
+        currency: properties.currency || "PKR",
+        value: properties.total,
+      })
+      return
+
+    default:
+      // Deliberately not forwarded. See the note above before adding to this list.
+      return
+  }
 }
 
 export function track(eventName: string, options: TrackOptions = {}) {
@@ -163,13 +224,17 @@ export function track(eventName: string, options: TrackOptions = {}) {
     missionId: options.missionId,
     deviceClass: deviceClass(),
     returningVisitor,
+    fbp: getFbp(),
     ...options.properties,
   }
 
-  trackMetaPixelEvent(eventName, properties)
+  // One id, both destinations: the pixel sends it as eventID and the server
+  // copy reuses it, so Meta counts a browser + Conversions API pair once.
+  const eventId = crypto.randomUUID()
+  trackMetaPixelEvent(eventName, properties, eventId)
 
   queue.push({
-    eventId: crypto.randomUUID(),
+    eventId,
     eventName,
     visitorId,
     sessionId: getSessionId(),

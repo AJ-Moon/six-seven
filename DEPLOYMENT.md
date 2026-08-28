@@ -91,6 +91,22 @@ git init && git add -A && git commit -m "Six Seven ordering site"
    SEED_MENU=true          # only for the FIRST deploy, see below
    ```
 
+   Optional, for Meta ads measurement (the Conversions API stays switched off
+   until all three are present):
+
+   ```
+   META_PIXEL_ID=850716231340911
+   META_CAPI_ACCESS_TOKEN=<Events Manager -> Settings -> Conversions API>
+   META_CAPI_TEST_EVENT_CODE=  # set only while testing, then clear it
+   ```
+
+   With these set, `AddToCart`, `InitiateCheckout` and `Purchase` are sent to
+   Meta from the server as well as the browser. Both copies carry the same
+   `event_id`, so Meta counts each one once. The server copy is what survives
+   iOS privacy settings and ad blockers, which otherwise swallow 20-40% of
+   browser events. Delivery runs through the existing job worker, so a slow
+   Graph API call never delays event ingestion.
+
 5. Deploy. The container runs `scripts/bootstrap.py` before serving: it creates
    the schema, applies all 11 migrations, and (with `SEED_MENU=true`) loads the
    42-item menu, branding, contact details and 5 km radius.

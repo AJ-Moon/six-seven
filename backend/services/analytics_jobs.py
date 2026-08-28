@@ -2,6 +2,7 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
+from services.meta_capi import forward_event as forward_meta_capi_event
 from services.events import emit_server_event
 from services.menu_matrix import refresh_menu_classifications
 from services.opportunities import detect_opportunities, generate_weekly_cards
@@ -506,6 +507,7 @@ def evaluate_abandoned_carts(cursor, tenant_id: int, metadata: dict[str, Any]) -
 
 
 JOB_HANDLERS: dict[str, Callable] = {
+    "meta.capi_forward": forward_meta_capi_event,
     "analytics.aggregate_hourly": aggregate_daily,
     "analytics.aggregate_daily": aggregate_daily_full,
     "analytics.refresh_item_metrics": aggregate_daily,
