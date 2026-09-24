@@ -394,20 +394,34 @@ def main() -> None:
                 (RID, *THEME.values()),
             )
 
-            cur.execute("DELETE FROM branches WHERE restaurant_id = %s", (RID,))
-            cur.execute(
-                """INSERT INTO branches (restaurant_id, name, address, city, phone, hours, is_open, is_default, maps_url)
-                   VALUES (%s,%s,%s,%s,%s,%s,TRUE,TRUE,%s)""",
-                (
-                    RID,
-                    "Six Seven - DHA Phase 4",
-                    "75 CCA, DD Block, DHA Phase 4",
-                    "Lahore",
-                    "0324-6756767",
-                    "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
-                    "https://maps.google.com/?q=31.4641372,74.3822137",
-                ),
+            branch_values = (
+                "Six Seven - DHA Phase 4",
+                "75 CCA, DD Block, DHA Phase 4",
+                "Lahore",
+                "0324-6756767",
+                "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
+                "https://maps.google.com/?q=31.4641372,74.3822137",
             )
+            cur.execute(
+                "SELECT id FROM branches WHERE restaurant_id = %s ORDER BY is_default DESC, id LIMIT 1",
+                (RID,),
+            )
+            branch_row = cur.fetchone()
+            if branch_row:
+                cur.execute(
+                    """UPDATE branches
+                       SET name=%s, address=%s, city=%s, phone=%s, hours=%s,
+                           maps_url=%s, is_default=TRUE
+                       WHERE id=%s AND restaurant_id=%s""",
+                    (*branch_values, branch_row[0], RID),
+                )
+            else:
+                cur.execute(
+                    """INSERT INTO branches
+                       (restaurant_id, name, address, city, phone, hours, maps_url, is_open, is_default)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,TRUE,TRUE)""",
+                    (RID, *branch_values),
+                )
 
             cur.execute("SELECT count(*) FROM menu_items WHERE restaurant_id=%s AND is_available", (RID,))
             print(f"menu items live: {cur.fetchone()[0]}")
