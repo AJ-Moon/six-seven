@@ -49,7 +49,7 @@ VALID_ORDER_STATUSES = [
     "out_for_delivery", "delivered", "cancelled",
 ]
 
-ORDER_PROGRESS_STATUSES = ["received", "preparing", "ready", "delivered"]
+ORDER_PROGRESS_STATUSES = ["received", "preparing", "ready", "delivered", "cancelled"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -350,6 +350,8 @@ def admin_update_order_status(
             if not existing_order:
                 raise HTTPException(status_code=404, detail="Order not found")
             previous_status = existing_order[0]
+            if status == "cancelled" and previous_status == "delivered":
+                raise HTTPException(status_code=409, detail="Delivered orders cannot be cancelled")
             cur.execute(
                 "UPDATE orders SET status = %s, completed_at = CASE WHEN %s = 'delivered' THEN COALESCE(completed_at, NOW()) ELSE completed_at END, updated_at = NOW() "
                 "WHERE id = %s AND restaurant_id = %s RETURNING id",
@@ -420,6 +422,28 @@ def admin_update_order_status(
                     tenant_id=rid,
                     job_name="analytics.aggregate_daily",
                     idempotency_key=f"order-completed:{order_id}",
+                    metadata={"orderId": order_id},
+                )
+
+            if status == "cancelled" and previous_status != "cancelled":
+                emit_server_event(
+                    cur,
+                    tenant_id=rid,
+                    event_id=f"order-cancelled:{order_id}",
+                    event_name="order_cancelled",
+                    visitor_id=existing_order[1] or "server",
+                    session_id=existing_order[2] or "server",
+                    cart_id=existing_order[3],
+                    location_id=existing_order[4],
+                    order_id=order_id,
+                    properties={"totalCents": int(existing_order[5] or 0), "currency": existing_order[6] or "USD"},
+                    consent_state="essential",
+                )
+                enqueue_job(
+                    cur,
+                    tenant_id=rid,
+                    job_name="analytics.aggregate_daily",
+                    idempotency_key=f"order-cancelled:{order_id}",
                     metadata={"orderId": order_id},
                 )
 

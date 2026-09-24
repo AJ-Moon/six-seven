@@ -9,10 +9,23 @@ import {
   BellRing,
   Volume2,
   VolumeX,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import { formatMoney } from "@/lib/money";
 import { paymentMethodLabel } from "@/lib/payment";
 import { formatCustomizationText } from "@/lib/customizations";
@@ -87,16 +100,20 @@ export default function AdminCurrentOrders() {
         method: "PATCH",
         body: JSON.stringify({ status }),
       });
-      if (res.ok) {
-        const updated: Order = await res.json();
-        if (status === "delivered" || status === "cancelled") {
-          setOrders((prev) => prev.filter((o) => o.id !== orderId));
-        } else {
-          setOrders((prev) =>
-            prev.map((o) => (o.id === orderId ? updated : o)),
-          );
-        }
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.detail || "Could not update the order");
       }
+      const updated: Order = await res.json();
+      if (status === "delivered" || status === "cancelled") {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      } else {
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? updated : o)),
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the order");
     } finally {
       setUpdatingId(null);
     }
@@ -388,6 +405,31 @@ export default function AdminCurrentOrders() {
                       </button>
                     );
                   })}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="ml-auto text-destructive" disabled={isUpdating}>
+                        <XCircle className="mr-1.5 h-4 w-4" />
+                        Cancel order
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel {order.id}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This order will move to Finished Orders as cancelled.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep order</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => void updateStatus(order.id, "cancelled")}
+                        >
+                          Cancel order
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </div>
