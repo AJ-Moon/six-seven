@@ -273,6 +273,7 @@ SETTINGS = {
     "announcement_active": "true",
     "maps_embed": "https://www.google.com/maps?q=31.4641372,74.3822137&z=16&output=embed",
     "cash_on_delivery": "true",
+    "global_discount_percent": "15",
     "menu_subtitle": "Mighty zingers, Australian beef burgers, tenders, loaded fries, wraps, salads, sweets and drinks — made fresh to order.",
     "footer_tagline": "Mighty burgers, crispy tenders, loaded fries, specialty coffee and cold drinks from DHA Phase 4 Lahore.",
     "closed_message": "We're closed right now. Online ordering opens Friday at 2 PM, Sunday at 5 PM, and 12 PM on other days.",
@@ -290,7 +291,7 @@ SETTINGS = {
             {
                 "image": "/images/six-seven-home-slide-beef-burgers.png",
                 "headline": "The Best Beef Burgers in Town",
-                "subtext": "Australian beef burgers with 20% off on website and dine-in.",
+                "subtext": "Australian beef burgers with 15% off on website and dine-in.",
             },
             {
                 "image": "/images/six-seven-home-slide-sandwiches-salads.png",

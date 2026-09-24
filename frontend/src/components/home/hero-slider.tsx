@@ -16,7 +16,7 @@ const SIX_SEVEN_PROMO_SLIDES = [
   {
     id: 1,
     headline: "The Best Beef Burgers in Town",
-    subheadline: "Australian beef burgers with 20% off on website and dine-in.",
+    subheadline: "Australian beef burgers with 15% off on website and dine-in.",
     image: "/images/six-seven-home-slide-beef-burgers.png",
   },
   {

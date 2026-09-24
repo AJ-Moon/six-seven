@@ -10,7 +10,7 @@ DEFAULT_BRANCH = {
     "name": "Six Seven DHA Phase 4",
     "address": "75 CCA, DD Block, DHA Phase 4",
     "city": "Lahore",
-    "phone": "DM @sixseven.pk",
+    "phone": "0324-6756767",
     "hours": "Mon-Thu 12 PM-1:30 AM; Fri 2 PM-2:30 AM; Sat 12 PM-2:30 AM; Sun 5 PM-1:30 AM",
     "isOpen": True,
     "mapsUrl": "https://maps.google.com/?q=31.4641372,74.3822137",
@@ -35,6 +35,17 @@ def _is_placeholder_branch(branch: dict) -> bool:
     return "flavor hub" in text or "555-01" in text or "new york" in text
 
 
+def _public_branch(branch: dict) -> dict:
+    if _is_placeholder_branch(branch):
+        return {
+            **DEFAULT_BRANCH,
+            "id": branch["id"],
+            "isOpen": branch["isOpen"],
+            "isDefault": branch["isDefault"],
+        }
+    return branch
+
+
 @router.get("")
 @router.get("/")
 def get_branches(restaurant_id: int = Depends(get_restaurant_id)):
@@ -47,11 +58,10 @@ def get_branches(restaurant_id: int = Depends(get_restaurant_id)):
             )
             rows = cur.fetchall()
     if not rows:
-        return [DEFAULT_BRANCH]
+        return []
     branches = [_row_to_branch(r) for r in rows]
-    if all(_is_placeholder_branch(branch) for branch in branches):
-        return [DEFAULT_BRANCH]
-    return branches
+    configured = [branch for branch in branches if not _is_placeholder_branch(branch)]
+    return configured or [_public_branch(branches[0])]
 
 
 @router.get("/{branch_id}")
@@ -65,10 +75,5 @@ def get_branch(branch_id: int, restaurant_id: int = Depends(get_restaurant_id)):
             )
             row = cur.fetchone()
     if not row:
-        if branch_id == DEFAULT_BRANCH["id"]:
-            return DEFAULT_BRANCH
         raise HTTPException(status_code=404, detail="Branch not found")
-    branch = _row_to_branch(row)
-    if _is_placeholder_branch(branch):
-        return DEFAULT_BRANCH
-    return branch
+    return _public_branch(_row_to_branch(row))
