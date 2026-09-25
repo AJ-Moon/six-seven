@@ -38,7 +38,7 @@ const ROUTES = [
     description:
       "Find the Six Seven branch at 75 CCA, DD Block, DHA Phase 4 Lahore with directions, timings, pickup and delivery details.",
     h1: "Six Seven Branch — 75 CCA, DD Block, DHA Phase 4, Lahore",
-    body: "Six Seven is located at 75 CCA, DD Block, DHA Phase 4, Lahore. Call 0324-6756767. Delivery covers a 5 km radius around DHA Phase 4, and pickup is available from the counter. Open Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM and Sunday 5 PM-1:30 AM.",
+    body: "Six Seven is located at 75 CCA, DD Block, DHA Phase 4, Lahore. Call 0324-6756767. Delivery covers a 5 km radius around DHA Phase 4, and pickup is available from the counter. Open Mon-Thu 12 PM-1 AM next day and Fri-Sun 5 PM-2 AM next day (Pakistan time).",
   },
   {
     path: "/contact",
@@ -54,7 +54,7 @@ const ROUTES = [
     description:
       "Answers about Six Seven ordering hours, delivery radius, pickup, payment options and the DHA Phase 4 Lahore branch.",
     h1: "Six Seven FAQ — ordering, delivery, pickup and payments",
-    body: "Six Seven accepts online orders Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM and Sunday 5 PM-1:30 AM. Delivery covers a 5 km radius around DHA Phase 4, Lahore. Payment is by cash on delivery, card on delivery or online transfer, and pickup orders are paid at the branch.",
+    body: "Six Seven accepts online orders Mon-Thu 12 PM-1 AM next day and Fri-Sun 5 PM-2 AM next day (Pakistan time). Delivery covers a 5 km radius around DHA Phase 4, Lahore. Payment is by cash on delivery, card on delivery or online transfer, and pickup orders are paid at the branch.",
   },
   {
     path: "/rewards",
