@@ -50,10 +50,8 @@ const SITE_NAVIGATION = [
 ];
 
 const OPENING_HOURS_SPECIFICATION = [
-  { dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday"], opens: "12:00", closes: "01:30" },
-  { dayOfWeek: "Friday", opens: "14:00", closes: "02:30" },
-  { dayOfWeek: "Saturday", opens: "12:00", closes: "02:30" },
-  { dayOfWeek: "Sunday", opens: "17:00", closes: "01:30" },
+  { dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday"], opens: "12:00", closes: "01:00" },
+  { dayOfWeek: ["Friday", "Saturday", "Sunday"], opens: "17:00", closes: "02:00" },
 ];
 
 const MENU_KEYWORDS = [
@@ -611,7 +609,7 @@ export function SeoMetadata() {
             name: "What are Six Seven's online ordering hours?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Online orders are accepted Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM, and Sunday 5 PM-1:30 AM.",
+              text: "Online orders are accepted Monday-Thursday 12 PM-1 AM next day and Friday-Sunday 5 PM-2 AM next day (Pakistan time).",
             },
           },
           {

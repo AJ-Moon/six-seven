@@ -320,8 +320,10 @@ export default function CheckoutPage() {
       toast.error("Please select a branch for pickup");
       return;
     }
-    if (!orderingStatus.open) {
-      toast.error(orderingStatus.message);
+    const currentOrderingStatus = getOrderingStatus();
+    setOrderingStatus(currentOrderingStatus);
+    if (!currentOrderingStatus.open) {
+      toast.error(currentOrderingStatus.message);
       return;
     }
 

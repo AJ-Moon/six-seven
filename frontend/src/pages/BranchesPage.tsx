@@ -10,7 +10,7 @@ import { MapPin, Clock, Phone, Navigation, Search, LocateFixed } from "lucide-re
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRestaurant } from "@/contexts/RestaurantContext";
-import { ORDER_HOURS_TEXT } from "@/lib/order-hours";
+import { getOrderingStatus, ORDER_HOURS_TEXT } from "@/lib/order-hours";
 
 type Branch = {
   id: number;
@@ -29,8 +29,7 @@ const DEFAULT_BRANCHES: Branch[] = [
     address: "75 CCA, DD Block, DHA Phase 4",
     city: "Lahore",
     phone: "DM @sixseven.pk",
-    hours:
-      "Mon-Thu 12 PM-1:30 AM; Fri 2 PM-2:30 AM; Sat 12 PM-2:30 AM; Sun 5 PM-1:30 AM",
+    hours: ORDER_HOURS_TEXT,
     isOpen: true,
   },
 ];
@@ -64,7 +63,7 @@ const normalizeBranches = (data: unknown): Branch[] => {
 };
 
 export default function BranchesPage() {
-  const { restaurantName } = useRestaurant();
+  const { restaurantName, restaurantOpen } = useRestaurant();
   const navigate = useNavigate();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +71,13 @@ export default function BranchesPage() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [orderingOpen, setOrderingOpen] = useState(() => getOrderingStatus().open);
+
+  useEffect(() => {
+    const updateOrderingStatus = () => setOrderingOpen(getOrderingStatus().open);
+    const interval = window.setInterval(updateOrderingStatus, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetch("/api/branches")
@@ -191,7 +197,7 @@ export default function BranchesPage() {
                             "hover:border-primary/30 hover:shadow-md",
                             activeBranch?.id === branch.id &&
                               "border-primary ring-1 ring-primary",
-                            !branch.isOpen && "opacity-60",
+                            !(branch.isOpen && restaurantOpen !== "false" && orderingOpen) && "opacity-60",
                           )}
                         >
                           <div className="flex items-start justify-between gap-4">
@@ -203,12 +209,12 @@ export default function BranchesPage() {
                                 <Badge
                                   variant="secondary"
                                   className={cn(
-                                    branch.isOpen
+                                    branch.isOpen && restaurantOpen !== "false" && orderingOpen
                                       ? "bg-green-100 text-green-700"
                                       : "bg-red-100 text-red-700",
                                   )}
                                 >
-                                  {branch.isOpen ? "Open" : "Closed"}
+                                  {branch.isOpen && restaurantOpen !== "false" && orderingOpen ? "Open" : "Closed"}
                                 </Badge>
                               </div>
 
@@ -240,7 +246,7 @@ export default function BranchesPage() {
                             <Button
                               size="sm"
                               className="flex-1"
-                              disabled={!branch.isOpen}
+                              disabled={!branch.isOpen || restaurantOpen === "false" || !orderingOpen}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 navigate("/menu");

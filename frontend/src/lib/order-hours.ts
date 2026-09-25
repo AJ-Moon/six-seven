@@ -1,5 +1,5 @@
 export const ORDER_HOURS_TEXT =
-  "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM";
+  "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)";
 
 /**
  * The same hours in the format schema.org actually parses. ORDER_HOURS_TEXT is
@@ -8,10 +8,8 @@ export const ORDER_HOURS_TEXT =
  * showed in search results.
  */
 export const ORDER_HOURS_SCHEMA = [
-  "Mo-Th 12:00-01:30",
-  "Fr 14:00-02:30",
-  "Sa 12:00-02:30",
-  "Su 17:00-01:30",
+  "Mo-Th 12:00-01:00",
+  "Fr-Su 17:00-02:00",
 ];
 
 const KARACHI_TIMEZONE = "Asia/Karachi";
@@ -45,15 +43,10 @@ function karachiParts(date: Date) {
 
 export function isOrderingOpen(date = new Date()) {
   const { day, minutes } = karachiParts(date);
-  const earlyCutoff = day === 6 || day === 0 ? 150 : 90;
-  if (minutes <= earlyCutoff) return true;
+  const earlyCutoff = day === 0 || day === 1 || day === 6 ? 120 : 60;
+  if (minutes < earlyCutoff) return true;
 
-  const openingMinute =
-    day === 5
-      ? 14 * 60
-      : day === 0
-        ? 17 * 60
-        : 12 * 60;
+  const openingMinute = day === 0 || day === 5 || day === 6 ? 17 * 60 : 12 * 60;
 
   return minutes >= openingMinute;
 }

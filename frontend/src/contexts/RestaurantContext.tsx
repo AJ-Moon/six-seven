@@ -74,14 +74,14 @@ const DEFAULTS: RestaurantTheme = {
   slides: [],
   currencySymbol: "Rs.",
   closedMessage:
-    "We're currently closed. Online ordering opens Friday at 2 PM, Sunday at 5 PM, and 12 PM on other days.",
+    "We're closed right now. Online ordering opens Mon-Thu at 12 PM and Fri-Sun at 5 PM (Pakistan time).",
   footerTagline:
     "Fresh ingredients, bold flavors, and fast delivery. Experience the taste of perfection with every order.",
   menuSubtitle:
     "From flame-grilled burgers to wood-fired pizzas, explore flavors crafted with passion.",
   contactReplyTime: "We reply within 24 hours",
   contactHoursNote:
-    "Mon-Thu: 12 PM-1:30 AM; Fri: 2 PM-2:30 AM; Sat: 12 PM-2:30 AM; Sun: 5 PM-1:30 AM",
+    "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)",
   dealsSectionTitle: "Deals You Won't Miss",
   dealsSectionSubtitle:
     "Grab these mouth-watering offers before they're gone. Handpicked combinations crafted just for you!",

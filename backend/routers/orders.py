@@ -28,8 +28,8 @@ router = APIRouter()
 
 ORDER_TIMEZONE = ZoneInfo("Asia/Karachi")
 ORDER_HOURS_DETAIL = (
-    "Online ordering hours: Mon-Thu 12 PM-1:30 AM, Fri 2 PM-2:30 AM, "
-    "Sat 12 PM-2:30 AM, Sun 5 PM-1:30 AM."
+    "Online ordering hours (Pakistan time): Mon-Thu 12 PM-1 AM next day; "
+    "Fri-Sun 5 PM-2 AM next day."
 )
 
 
@@ -134,14 +134,12 @@ def _orders_open_now(now: Optional[datetime] = None) -> bool:
     minutes = local_now.hour * 60 + local_now.minute
     weekday = local_now.weekday()  # Monday=0, Sunday=6
 
-    early_cutoff = 150 if weekday in {5, 6} else 90
-    if minutes <= early_cutoff:
+    # Early morning belongs to the previous day's opening window.
+    early_cutoff = 120 if weekday in {0, 5, 6} else 60
+    if minutes < early_cutoff:
         return True
 
-    opening_minute = {
-        4: 14 * 60,
-        6: 17 * 60,
-    }.get(weekday, 12 * 60)
+    opening_minute = 17 * 60 if weekday in {4, 5, 6} else 12 * 60
     return minutes >= opening_minute
 
 

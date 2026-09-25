@@ -8,7 +8,7 @@ DEFAULT_FAQS = [
     {
         "id": 1,
         "question": "What are your online ordering hours?",
-        "answer": "Online orders are accepted Mon-Thu 12 PM-1:30 AM, Friday 2 PM-2:30 AM, Saturday 12 PM-2:30 AM, and Sunday 5 PM-1:30 AM.",
+        "answer": "Online orders are accepted Monday-Thursday 12 PM-1 AM next day and Friday-Sunday 5 PM-2 AM next day (Pakistan time).",
         "category": "Orders",
         "orderIndex": 1,
     },
