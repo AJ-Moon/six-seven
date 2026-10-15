@@ -82,9 +82,9 @@ const DEFAULTS: RestaurantTheme = {
   contactReplyTime: "We reply within 24 hours",
   contactHoursNote:
     "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)",
-  dealsSectionTitle: "Deals You Won't Miss",
+  dealsSectionTitle: "Featured Deals",
   dealsSectionSubtitle:
-    "Grab these mouth-watering offers before they're gone. Handpicked combinations crafted just for you!",
+    "Burgers, sharing meals and coffee combos at fixed prices. The extra 15% menu discount does not apply.",
   featuredSectionTitle: "Fan Favorites & New Arrivals",
   featuredSectionSubtitle:
     "Discover what everyone is ordering and try our latest creations",

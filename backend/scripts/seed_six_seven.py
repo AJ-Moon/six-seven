@@ -183,6 +183,111 @@ def menu_item(
     }
 
 
+SINGLE_BURGER_WRAP_CHOICES = [
+    option("mighty-zinger", "Mighty Zinger"),
+    option("mighty-grilled-chicken", "Mighty Grilled Chicken"),
+    option("single-stack", "Single Stack beef burger"),
+    option("crispy-chicken-wrap", "Crispy Chicken Wrap"),
+    option("grilled-chicken-wrap", "Grilled Chicken Wrap"),
+]
+DOUBLE_BURGER_CHOICES = [
+    option("mighty-double-zinger", "Mighty Double Zinger"),
+    option("mighty-double-grilled-chicken", "Mighty Double Grilled Chicken"),
+    option("double-stack", "Double Stack beef burger"),
+    option("mushroom-melt", "Mushroom Melt beef burger"),
+    option("smoky-barbecue-melt", "Smoky Barbecue Melt beef burger"),
+]
+COFFEE_CHOICES = [
+    option(slug, name)
+    for slug, name in [
+        ("espresso", "Espresso"), ("americano", "Americano"),
+        ("latte", "Latte"), ("cappuccino", "Cappuccino"),
+        ("spanish-latte", "Spanish Latte"), ("vanilla-latte", "Vanilla Latte"),
+        ("caramel-latte", "Caramel Latte"), ("tiramisu-latte", "Tiramisu Latte"),
+        ("popcorn-latte", "Popcorn Latte"), ("mocha", "Mocha"),
+        ("pistachio-latte", "Pistachio Latte"),
+        ("iced-americano", "Iced Americano"), ("iced-latte", "Iced Latte"),
+        ("iced-spanish-latte", "Iced Spanish Latte"), ("iced-mocha", "Iced Mocha"),
+    ]
+]
+
+
+def deal_burger_groups(count: int, choices: list[dict]) -> list[dict]:
+    groups = []
+    for slot in range(1, count + 1):
+        choice_id = f"burger-{slot}"
+        label = "Double-patty burger" if count == 1 else f"Burger or wrap {slot}"
+        groups.append(group(choice_id, label, choices, required=True))
+        for choice in choices:
+            if choice["id"] == "single-stack" or choice["id"] in {
+                "double-stack", "mushroom-melt", "smoky-barbecue-melt"
+            }:
+                continue
+            groups.append(group(
+                f"{choice_id}-{choice['id']}-sauces",
+                f"Choose 2 sauces for {choice['name']}",
+                SAUCE_OPTIONS,
+                required=True, min_selections=2, max_selections=2, allow_repeats=True,
+                depends_on={"groupId": choice_id, "optionId": choice["id"]},
+            ))
+    return groups
+
+
+def deal_coffee_groups(count: int) -> list[dict]:
+    return [
+        group(f"coffee-{slot}", f"Coffee {slot}", COFFEE_CHOICES, required=True)
+        for slot in range(1, count + 1)
+    ]
+
+
+DEAL_MENU = [
+    menu_item(
+        "Deals", "Burgers", "The Solo Feast", 1349,
+        "Choose any double-patty beef or chicken burger, plus plain fries and a 350ml Coke or Sprite. Choose two sauces with chicken burgers. Fixed deal price; no additional 15% discount.",
+        "/images/deals/solo-feast.png", featured=True,
+        customizations=deal_burger_groups(1, DOUBLE_BURGER_CHOICES) + [
+            group("drink", "350ml drink", [option("coke", "Coke"), option("sprite", "Sprite")], required=True),
+        ],
+    ),
+    menu_item(
+        "Deals", "Sharing", "The Family Feast", 3999,
+        "Choose four single-patty beef or chicken burgers or chicken wraps. Includes four Golden Tenders with two sauce dips, one plain fries, one curly fries, a 1.5L Coke or Sprite, and one free chocolate-drip waffle or mini pancakes. Fixed deal price; no additional 15% discount.",
+        "/images/deals/family-feast.png", featured=True,
+        customizations=deal_burger_groups(4, SINGLE_BURGER_WRAP_CHOICES) + [
+            group("tender-sauces", "Choose 2 tender sauces", SAUCE_OPTIONS, required=True, min_selections=2, max_selections=2, allow_repeats=True),
+            group("drink", "1.5L drink", [option("coke", "Coke"), option("sprite", "Sprite")], required=True),
+            group("dessert", "Free dessert", [option("waffle", "Chocolate Drip waffle"), option("mini-pancakes", "Chocolate Drip mini pancakes")], required=True),
+        ],
+    ),
+    menu_item(
+        "Deals", "Sharing", "Double Trouble", 1699,
+        "Choose two single-patty beef or chicken burgers or chicken wraps. Includes one plain fries and a 1L Coke or Sprite. Choose two sauces with chicken burgers or wraps. Fixed deal price; no additional 15% discount.",
+        "/images/deals/double-trouble.png", featured=True,
+        customizations=deal_burger_groups(2, SINGLE_BURGER_WRAP_CHOICES) + [
+            group("drink", "1L drink", [option("coke", "Coke"), option("sprite", "Sprite")], required=True),
+        ],
+    ),
+    menu_item(
+        "Deals", "Coffee", "Coffee Lovers' Heaven", 1599,
+        "Choose any two hot or iced coffees and one chocolate-drip waffle or mini pancakes. Fixed deal price; no additional 15% discount.",
+        "/images/deals/coffee-lovers-heaven.png", featured=True,
+        customizations=deal_coffee_groups(2) + [
+            group("dessert", "Dessert", [option("waffle", "Chocolate Drip waffle"), option("mini-pancakes", "Chocolate Drip mini pancakes")], required=True),
+        ],
+    ),
+    menu_item(
+        "Deals", "Coffee", "Coffee & Crunch Deal", 1099,
+        "Choose a Tikka or Fajita grilled sandwich on white or bran bread, plus any hot or iced coffee. Fixed deal price; no additional 15% discount.",
+        "/images/deals/coffee-crunch-deal.png", featured=True,
+        customizations=[
+            group("sandwich", "Grilled sandwich", [option("tikka", "Tikka Grilled Sandwich"), option("fajita", "Fajita Grilled Sandwich")], required=True),
+            BREAD_CHOICE,
+            *deal_coffee_groups(1),
+        ],
+    ),
+]
+
+
 MENU = [
     menu_item("Burgers", "Chicken Burgers", "Mighty Zinger", 730, "Crispy chicken fillet, iceberg lettuce and your choice of 2 sauces. Optional jalapenos are free.", "mighty-zinger", popular=True, featured=True, customizations=CHICKEN_BURGER_OPTIONS),
     menu_item("Burgers", "Chicken Burgers", "Mighty Double Zinger", 1080, "Double crispy chicken, iceberg lettuce and your choice of 2 sauces. Optional jalapenos are free.", "mighty-double-zinger", popular=True, customizations=CHICKEN_BURGER_OPTIONS),
@@ -245,6 +350,7 @@ MENU = [
     menu_item("Add Ons", "Extras", "Sauce Dip", 130, "Chipotle, Atomic, Garlic Mayo or 67 Special.", None, customizations=[PICK_ONE_SAUCE]),
     menu_item("Add Ons", "Extras", "Extra Cheese", 130, "An extra helping of melted cheese.", None),
     menu_item("Add Ons", "Extras", "Water", 100, "Chilled bottled water.", None),
+    *DEAL_MENU,
 ]
 
 SETTINGS = {
@@ -279,8 +385,8 @@ SETTINGS = {
     "closed_message": "We're closed right now. Online ordering opens Mon-Thu at 12 PM and Fri-Sun at 5 PM (Pakistan time).",
     "contact_reply_time": "We usually reply within a few hours",
     "contact_hours_note": "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)",
-    "deals_section_title": "Meal Upgrades",
-    "deals_section_subtitle": "Add fries and a signature drink to eligible burgers, wraps and tenders from the item options.",
+    "deals_section_title": "Featured Deals",
+    "deals_section_subtitle": "Burgers, sharing meals and coffee combos at fixed prices. The extra 15% menu discount does not apply.",
     "featured_section_title": "Fresh From The New Menu",
     "featured_section_subtitle": "Mighty burgers, Australian beef stacks, crispy tenders and loaded fries.",
     "promo_headline": "Order Online, Your Way",
@@ -333,7 +439,8 @@ def main() -> None:
             keep: set[int] = set()
 
             for display_order, item in enumerate(MENU, start=1):
-                image = f"{IMG}/{item['image_slug']}.webp" if item["image_slug"] else ""
+                image = (item["image_slug"] if item["image_slug"].startswith("/")
+                         else f"{IMG}/{item['image_slug']}.webp") if item["image_slug"] else ""
                 cents = item["price_rs"] * 100
                 customizations_json = item["customizations"]
                 if item["name"] in existing:

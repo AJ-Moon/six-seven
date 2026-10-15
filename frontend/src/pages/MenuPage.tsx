@@ -157,7 +157,7 @@ export default function MenuPage() {
       url: `${SITE_URL}/menu`,
       provider: { "@id": `${SITE_URL}/#business` },
       description:
-        "The full Six Seven menu: Mighty Zinger, Australian beef Single/Double/Triple Stack burgers, chicken tenders, loaded fries, wraps, sandwiches, salads, kids meals, sweets, signature drinks, iced teas, smoothies, frappes and coffee in DHA Phase 4 Lahore.",
+        "The full Six Seven menu: fixed-price burger and coffee deals, Mighty Zinger, Australian beef burgers, chicken tenders, loaded fries, wraps, sandwiches, salads, sweets, signature drinks, iced teas, smoothies, frappes and coffee in DHA Phase 4 Lahore.",
       inLanguage: "en-PK",
       // Search engines use the aggregate range to show "Rs. 100 - Rs. 1530"
       // alongside the listing; without it there is no price signal at all.
@@ -440,7 +440,7 @@ export default function MenuPage() {
                       "hover:border-primary/30",
                     )}
                   >
-                    <div className="relative aspect-4/3 overflow-hidden bg-[#FDF1D7]">
+                    <div className={cn("relative overflow-hidden bg-[#FDF1D7]", item.category === "Deals" ? "aspect-[4/5]" : "aspect-4/3")}>
                       {/* Items without a photo (add-ons, for example) fall back to
                           the brand mark. Rendering <img src=""> makes the browser
                           re-request the page, so the tag is omitted entirely. */}
@@ -451,7 +451,7 @@ export default function MenuPage() {
                           alt={item.name}
                           loading="lazy"
                           decoding="async"
-                          className="six7-card-img absolute inset-0 h-full w-full object-cover"
+                          className={cn("six7-card-img absolute inset-0 h-full w-full", item.category === "Deals" ? "object-contain" : "object-cover")}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -464,7 +464,7 @@ export default function MenuPage() {
                         </div>
                       )}
                       <div className="absolute left-3 top-3 flex flex-col gap-2">
-                        {item.isPopular && (
+                        {item.isPopular && item.category !== "Deals" && (
                           <Badge className="bg-secondary text-secondary-foreground">
                             Popular
                           </Badge>
@@ -476,7 +476,7 @@ export default function MenuPage() {
                           </Badge>
                         )}
                       </div>
-                      <Button
+                      {item.category !== "Deals" && <Button
                         size="icon"
                         aria-label={`Add ${item.name} to cart`}
                         className="six7-add six7-press absolute bottom-2 right-2 h-11 w-11 rounded-full shadow-lg sm:bottom-3 sm:right-3"
@@ -486,7 +486,7 @@ export default function MenuPage() {
                       >
                         <Plus className="h-5 w-5" />
                         <span className="sr-only">Add to cart</span>
-                      </Button>
+                      </Button>}
                     </div>
                     <div className="p-3 sm:p-4">
                       {item.subcategory && (
@@ -497,7 +497,7 @@ export default function MenuPage() {
                       <h3 className="font-serif text-base font-semibold text-card-foreground line-clamp-2 sm:text-lg sm:line-clamp-1">
                         {item.name}
                       </h3>
-                      <p className="mt-1 hidden text-sm text-muted-foreground line-clamp-2 sm:block">
+                      <p className={cn("mt-1 text-sm text-muted-foreground", item.category === "Deals" ? "line-clamp-4" : "hidden line-clamp-2 sm:block")}>
                         {item.description}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 sm:mt-3">

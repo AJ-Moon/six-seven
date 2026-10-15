@@ -21,8 +21,8 @@ export default function HomePage() {
         <QuickActions />
         <SearchIntentSection />
         <MenuCategories />
-        <FeaturedItems />
         <DealsSection />
+        <FeaturedItems />
         <AppPromo />
       </main>
       <Footer />

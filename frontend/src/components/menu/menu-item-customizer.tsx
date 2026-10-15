@@ -158,7 +158,7 @@ export function MenuItemCustomizer({
       <DialogContent className="max-h-[92vh] max-w-2xl gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4 pr-12">
           <DialogTitle>{item.name}</DialogTitle>
-          <DialogDescription className="line-clamp-2">{item.description}</DialogDescription>
+          <DialogDescription className={item.category === "Deals" ? "max-h-24 overflow-y-auto" : "line-clamp-2"}>{item.description}</DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[62vh]">
           <div className="space-y-5 p-5">

@@ -1,42 +1,18 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Percent } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { fetchJsonWithRetry } from "@/lib/api";
-import { useCart } from "@/contexts/CartContext";
-import { toast } from "sonner";
-import { useRestaurant } from "@/contexts/RestaurantContext";
 import { formatMoney } from "@/lib/money";
-import type { MenuCustomizationGroup } from "@/types/menu";
-
-type MenuItem = {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  salePrice?: number | null;
-  image: string;
-  isPopular: boolean;
-  isFeatured?: boolean;
-  customizations?: MenuCustomizationGroup[];
-};
+import { useRestaurant } from "@/contexts/RestaurantContext";
+import type { PublicMenuItem } from "@/types/menu";
 
 export function DealsSection() {
-  const { addItem } = useCart();
-  const navigate = useNavigate();
   const { dealsSectionTitle, dealsSectionSubtitle, currencySymbol } = useRestaurant();
-  const {
-    data: items = [],
-    isLoading: loading,
-    isError: error,
-    refetch,
-  } = useQuery({
-    queryKey: ["menu-all"],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["menu-deals"],
     queryFn: () =>
-      fetchJsonWithRetry<MenuItem[]>("/api/menu", undefined, {
+      fetchJsonWithRetry<PublicMenuItem[]>("/api/menu?category=Deals", undefined, {
         timeoutMs: 15000,
         retries: 1,
       }),
@@ -44,202 +20,82 @@ export function DealsSection() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const deals = useMemo(() => {
-    return items
-      .filter((item) => item.salePrice != null && item.salePrice < item.price)
-      .map((item) => {
-        const discountedPrice = Number(item.salePrice);
-        const originalPrice = item.price;
-        const discount = Math.round(
-          ((originalPrice - discountedPrice) / originalPrice) * 100,
-        );
-        return {
-          id: item.id,
-          title: item.name,
-          description: item.description,
-          originalPrice,
-          discountedPrice,
-          discount,
-          image: item.image,
-          customizations: item.customizations || [],
-          badge: item.isFeatured
-            ? "Featured"
-            : item.isPopular
-              ? "Popular"
-              : "Limited",
-          expiresIn: "Limited time",
-        };
-      })
-      .slice(0, 3);
-  }, [items]);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <section className="bg-muted py-12 lg:py-16">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="aspect-4/3 animate-pulse rounded-2xl bg-card"
-              />
-            ))}
-          </div>
+      <section className="border-y bg-muted/40 py-12 lg:py-16" aria-label="Featured deals">
+        <div className="mx-auto grid max-w-7xl gap-5 px-4 sm:grid-cols-2 lg:grid-cols-3 lg:px-8">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="aspect-[4/5] animate-pulse rounded-md bg-card" />
+          ))}
         </div>
       </section>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <section className="bg-muted py-12 lg:py-16">
-        <div className="mx-auto max-w-7xl px-4 text-center lg:px-8">
-          <p className="text-sm text-muted-foreground">
-            Could not load deals right now.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            onClick={() => refetch()}
-          >
-            Retry
-          </Button>
-        </div>
+      <section className="border-y bg-muted/40 py-12 text-center">
+        <p className="text-sm text-muted-foreground">Could not load deals right now.</p>
+        <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+          Retry
+        </Button>
       </section>
     );
   }
 
-  if (deals.length === 0) return null;
+  const deals = data || [];
+  if (!deals.length) return null;
 
   return (
-    <section className="bg-muted py-12 lg:py-16">
+    <section id="featured-deals" className="border-y bg-muted/40 py-12 lg:py-16">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        {/* Section Header */}
-        <div className="mb-10 flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
+        <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Badge
-              variant="secondary"
-              className="mb-3 border-primary/20 bg-primary/10 px-3 py-1 text-primary transition-colors hover:bg-primary/20"
-            >
-              <Percent className="mr-1.5 h-3.5 w-3.5" />
-              Limited Time Only
-            </Badge>
-            <h2 className="font-serif text-4xl font-extrabold tracking-tight sm:text-5xl">
-              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
-                {dealsSectionTitle}
-              </span>
+            <h2 className="font-serif text-3xl font-bold text-foreground sm:text-4xl">
+              {dealsSectionTitle}
             </h2>
-            <p className="mt-3 max-w-xl text-lg text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
               {dealsSectionSubtitle}
             </p>
           </div>
-          <Button variant="outline" className="group h-10 px-6" asChild>
-            <Link to="/menu">
-              View All Offers
-              <span className="ml-2 transition-transform group-hover:translate-x-1">
-                →
-              </span>
+          <Button variant="outline" asChild>
+            <Link to="/menu?category=Deals">
+              All deals <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
 
-        {/* Deals Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {deals.map((deal) => (
-            <div
-              key={deal.id}
-              className={cn(
-                "group relative overflow-hidden rounded-2xl bg-card shadow-sm transition-all duration-300",
-                "hover:shadow-xl hover:shadow-primary/10",
-              )}
-            >
-              {/* Image Container */}
-              <div className="relative aspect-4/3 overflow-hidden">
-                {deal.image ? (
-                  <img
-                    src={deal.image}
-                    alt={deal.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-[#FDF1D7]">
-                    <img src="/images/six-seven-mark.png" alt="" loading="lazy" className="h-10 w-10 opacity-45" />
-                  </div>
-                )}
-
-                {/* Discount Badge */}
-                <div className="absolute left-4 top-4">
-                  <Badge className="bg-primary text-primary-foreground">
-                    {deal.discount}% OFF
-                  </Badge>
-                </div>
-
-                {/* Type Badge */}
-                <div className="absolute right-4 top-4">
-                  <Badge
-                    variant="secondary"
-                    className="bg-accent text-accent-foreground"
-                  >
-                    {deal.badge}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-5">
-                <h3 className="font-serif text-xl font-bold text-card-foreground">
-                  {deal.title}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {deal.description}
-                </p>
-
-                {/* Price */}
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="font-serif text-2xl font-bold text-primary">
-                    {formatMoney(deal.discountedPrice, currencySymbol)}
-                  </span>
-                  <span className="text-sm text-muted-foreground line-through">
-                    {formatMoney(deal.originalPrice, currencySymbol)}
+            <article key={deal.id} className="overflow-hidden rounded-md border bg-card">
+              <Link
+                to={`/menu?category=Deals&search=${encodeURIComponent(deal.name)}`}
+                aria-label={`Choose options for ${deal.name}`}
+                className="block aspect-[4/5] bg-muted"
+              >
+                <img
+                  src={deal.image}
+                  alt={`${deal.name} deal poster`}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-contain"
+                />
+              </Link>
+              <div className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-serif text-lg font-semibold">{deal.name}</h3>
+                  <span className="shrink-0 font-semibold text-primary">
+                    {formatMoney(deal.price, currencySymbol)}
                   </span>
                 </div>
-
-                {/* CTA */}
-                <div className="mt-4">
-                  <Button
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => {
-                      if (deal.customizations.length) {
-                        navigate(`/menu?search=${encodeURIComponent(deal.title)}`);
-                        toast.message("Choose your options on the menu page", {
-                          description: deal.title,
-                        });
-                        return;
-                      }
-                      addItem({
-                        menuItemId: deal.id,
-                        name: deal.title,
-                        price: deal.discountedPrice,
-                        image: deal.image,
-                      });
-                      toast.success(`${deal.title} added to cart`, {
-                        action: {
-                          label: "View Cart",
-                          onClick: () => navigate("/cart"),
-                        },
-                      });
-                    }}
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
-                  </Button>
-                </div>
+                <p className="line-clamp-3 text-sm text-muted-foreground">{deal.description}</p>
+                <Button size="sm" className="w-full" asChild>
+                  <Link to={`/menu?category=Deals&search=${encodeURIComponent(deal.name)}`}>
+                    Choose options
+                  </Link>
+                </Button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </div>

@@ -209,6 +209,7 @@ def load_global_discount_config(cursor, tenant_id: int) -> tuple[int, set[str]]:
         percent = 0
     percent = max(0, min(90, percent))
     excluded = _split_csv(raw.get("global_discount_excluded_categories", "Deals, Combo Meal"))
+    excluded.add("deals")
     return percent, excluded
 
 

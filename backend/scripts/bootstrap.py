@@ -44,6 +44,7 @@ def main() -> int:
         _run("Six Seven menu seed", [python, "scripts/seed_six_seven.py"])
     else:
         print("\n(SEED_MENU not set — leaving menu and settings untouched)")
+        _run("Six Seven deals", [python, "scripts/seed_deals.py"])
 
     print("\nBootstrap complete.\n", flush=True)
     return 0

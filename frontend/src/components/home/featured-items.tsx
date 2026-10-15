@@ -15,6 +15,7 @@ import type { MenuCustomizationGroup } from "@/types/menu";
 
 type MenuItem = {
   id: number;
+  category: string;
   name: string;
   description: string;
   price: number;
@@ -48,8 +49,8 @@ export function FeaturedItems() {
   });
 
   const featuredItems = useMemo(() => {
-    const explicit = items.filter((item) => item.isFeatured);
-    const fallback = items.filter((item) => item.isPopular);
+    const explicit = items.filter((item) => item.category !== "Deals" && item.isFeatured);
+    const fallback = items.filter((item) => item.category !== "Deals" && item.isPopular);
     return (explicit.length ? explicit : fallback).slice(0, 4);
   }, [items]);
 

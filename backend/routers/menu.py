@@ -11,6 +11,7 @@ from services.commerce import effective_sale_price_cents, load_global_discount_c
 router = APIRouter()
 
 CATEGORY_ORDER = [
+    "Deals",
     "Burgers",
     "Chicken Tenders",
     "Loaded Fries",
