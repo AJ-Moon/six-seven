@@ -220,7 +220,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
       "Six Seven delivery radius",
       "Six Seven payment options",
       "cash on delivery Lahore restaurant",
-      "card on delivery Lahore",
+      "online transfer Lahore restaurant",
       "pickup order Lahore",
       "Six Seven timings",
     ],
@@ -551,7 +551,7 @@ export function SeoMetadata() {
       hasMenu: ORDERING_URL,
       menu: ORDERING_URL,
       acceptsReservations: false,
-      paymentAccepted: ["Cash on delivery", "Card on delivery", "Online transfer"],
+      paymentAccepted: ["Cash on delivery", "Online transfer"],
       potentialAction: {
         "@type": "OrderAction",
         target: ORDERING_URL,
@@ -625,7 +625,7 @@ export function SeoMetadata() {
             name: "How can I pay for a Six Seven order?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Delivery orders can be paid by cash on delivery, card on delivery, or online transfer. Pickup orders can be paid at the branch.",
+              text: "Delivery orders can be paid by cash on delivery or online transfer. Pickup orders can be paid at the branch.",
             },
           },
         ],

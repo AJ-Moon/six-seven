@@ -139,7 +139,7 @@ export default function CheckoutPage() {
   const [orderType, setOrderType] = useState<"delivery" | "pickup">(
     "delivery",
   );
-  const [paymentMethod, setPaymentMethod] = useState(cashOnDelivery ? "cash" : "card");
+  const [paymentMethod, setPaymentMethod] = useState(cashOnDelivery ? "cash" : "online_transfer");
   const [branchId, setBranchId] = useState<number | undefined>(undefined);
   const [notes, setNotes] = useState("");
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
@@ -173,7 +173,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!cashOnDelivery && paymentMethod === "cash") {
-      setPaymentMethod("card");
+      setPaymentMethod("online_transfer");
     }
   }, [cashOnDelivery, paymentMethod]);
 

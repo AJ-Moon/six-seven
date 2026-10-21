@@ -10,7 +10,7 @@ Six Seven serves Mighty Zinger chicken burgers, Australian beef burgers, chicken
 - [Menu](https://sixseven.pk/menu): Full menu with Mighty Zinger, Australian beef burgers, chicken tenders, loaded fries, wraps, grilled sandwiches, salads, kids meals, waffles, mini pancakes, signature drinks, iced teas, smoothies, frappes, iced coffees and hot coffees.
 - [Branch Locator](https://sixseven.pk/branches): DHA Phase 4 Lahore branch location, address, delivery radius, pickup and directions.
 - [Contact](https://sixseven.pk/contact): Customer support, order help, feedback, phone and brand inquiries.
-- [FAQ](https://sixseven.pk/faq): Ordering hours, delivery radius, pickup, cash on delivery, card on delivery and online transfer questions.
+- [FAQ](https://sixseven.pk/faq): Ordering hours, delivery radius, pickup, cash on delivery and online transfer questions.
 - [Rewards](https://sixseven.pk/rewards): Points, loyalty and offers for Six Seven customers.
 - [Careers](https://sixseven.pk/careers): Restaurant and cafe job opportunities in Lahore.
 - [Franchise](https://sixseven.pk/franchise): Franchise, partnership and brand growth inquiries.
@@ -40,7 +40,7 @@ Six Seven serves Mighty Zinger chicken burgers, Australian beef burgers, chicken
 - Ordering: Delivery and pickup
 - Phone: +92 324 6756767
 - Hours (Pakistan time): Mon-Thu 12 PM-1 AM next day; Fri-Sun 5 PM-2 AM next day
-- Payments: delivery orders support cash on delivery, card on delivery and online transfer; pickup orders are paid at the branch.
+- Payments: delivery orders support cash on delivery and online transfer; pickup orders are paid at the branch.
 
 ## Menu Highlights
 

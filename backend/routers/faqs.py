@@ -22,7 +22,7 @@ DEFAULT_FAQS = [
     {
         "id": 3,
         "question": "How can I pay?",
-        "answer": "Delivery orders can be paid by cash on delivery, card on delivery, or online transfer. Pickup orders can be paid at the branch.",
+        "answer": "Delivery orders can be paid by cash on delivery or online transfer. Pickup orders can be paid at the branch.",
         "category": "Payments",
         "orderIndex": 3,
     },

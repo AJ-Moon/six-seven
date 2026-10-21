@@ -216,7 +216,7 @@ def chat(
 
             is_open = str(settings.get("restaurant_open", "true")).lower() == "true"
             cash_on_delivery = str(settings.get("cash_on_delivery", "true")).lower() == "true"
-            payment_options = ["Card on Delivery", "Online Transfer"]
+            payment_options = ["Online Transfer"]
             if cash_on_delivery:
                 payment_options.insert(0, "Cash on Delivery")
             payment_note = ", ".join(payment_options)
@@ -361,7 +361,7 @@ OR when customer says YES to the order summary:
                                             "guest_phone": {"type": ["string", "null"]},
                                             "order_type": {"type": "string", "enum": ["delivery", "pickup"]},
                                             "address": {"type": ["string", "null"]},
-                                            "payment_method": {"type": "string", "enum": ["cash", "card", "online_transfer", "pay_on_pickup"]},
+                                            "payment_method": {"type": "string", "enum": ["cash", "online_transfer", "pay_on_pickup"]},
                                             "notes": {"type": ["string", "null"]}
                                         },
                                         "required": ["type", "items", "order_type"]
@@ -439,9 +439,11 @@ OR when customer says YES to the order summary:
                             ai_stage = "collecting_details"
                             ai_action = None
                         else:
-                            payment_method = "pay_on_pickup" if order_type == "pickup" else act.get("payment_method", "cash")
-                            if payment_method not in {"cash", "card", "online_transfer", "pay_on_pickup"}:
-                                raise ValueError("Please choose cash, card, or online transfer before placing the order.")
+                            default_payment = "cash" if cash_on_delivery else "online_transfer"
+                            payment_method = "pay_on_pickup" if order_type == "pickup" else act.get("payment_method", default_payment)
+                            allowed_delivery_methods = {"cash", "online_transfer"} if cash_on_delivery else {"online_transfer"}
+                            if order_type == "delivery" and payment_method not in allowed_delivery_methods:
+                                raise ValueError("Please choose an available payment method before placing the order.")
 
                             priced_lines = price_menu_lines(
                                 cur,

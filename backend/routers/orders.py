@@ -76,8 +76,8 @@ class CreateOrderRequest(BaseModel):
     @field_validator("paymentMethod")
     @classmethod
     def validate_payment_method(cls, v: str) -> str:
-        if v not in {"cash", "card", "online_transfer", "pay_on_pickup"}:
-            raise ValueError("paymentMethod must be cash, card, online_transfer, or pay_on_pickup")
+        if v not in {"cash", "online_transfer", "pay_on_pickup"}:
+            raise ValueError("paymentMethod must be cash, online_transfer, or pay_on_pickup")
         return v
 
 
