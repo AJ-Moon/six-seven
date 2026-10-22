@@ -25,7 +25,7 @@ export function DeliveryPinMap({ store, focus, pin, radiusKm, onPick }: Props) {
     if (!containerRef.current) return;
     const map = L.map(containerRef.current, { scrollWheelZoom: false }).setView(
       [store.lat, store.lng],
-      14,
+      12,
     );
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -63,8 +63,11 @@ export function DeliveryPinMap({ store, focus, pin, radiusKm, onPick }: Props) {
   }, [radiusKm]);
 
   useEffect(() => {
-    mapRef.current?.setView([focus.lat, focus.lng], 14);
-  }, [focus.lat, focus.lng]);
+    mapRef.current?.setView(
+      [focus.lat, focus.lng],
+      focus.lat === store.lat && focus.lng === store.lng ? 12 : 14,
+    );
+  }, [focus.lat, focus.lng, store.lat, store.lng]);
 
   useEffect(() => {
     const map = mapRef.current;
