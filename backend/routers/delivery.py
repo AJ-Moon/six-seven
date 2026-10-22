@@ -1,8 +1,7 @@
 """Delivery radius check endpoint — uses Haversine formula, no external libraries."""
 import math
-from fastapi import APIRouter, Depends
-from fastapi import HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from db import get_db
 from dependencies.auth import get_restaurant_id
@@ -30,9 +29,23 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 from typing import Optional
 
 class DeliveryCheckRequest(BaseModel):
-    customerLat: float
-    customerLng: float
+    customerLat: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    customerLng: float = Field(ge=-180, le=180, allow_inf_nan=False)
     restaurantId: Optional[int] = None
+
+
+def parse_delivery_settings(settings: dict[str, str]) -> tuple[float, float, float]:
+    try:
+        latitude = float(settings["restaurant_lat"])
+        longitude = float(settings["restaurant_lng"])
+        radius_km = float(settings.get("delivery_radius_km") or "3")
+        if not all(math.isfinite(value) for value in (latitude, longitude, radius_km)):
+            raise ValueError("non-finite delivery setting")
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180 and radius_km > 0):
+            raise ValueError("invalid delivery setting")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Delivery is temporarily unavailable") from exc
+    return latitude, longitude, radius_km
 
 
 @router.post("/check-delivery")
@@ -60,26 +73,7 @@ def check_delivery(
 
     settings: dict[str, str] = {r[0]: r[1] for r in rows}
 
-    lat_str = settings.get("restaurant_lat", "").strip()
-    lng_str = settings.get("restaurant_lng", "").strip()
-    radius_str = settings.get("delivery_radius_km", "").strip()
-
-    # If the restaurant hasn't configured a location, allow delivery everywhere
-    if not lat_str or not lng_str:
-        return {"withinRadius": True, "distanceKm": 0.0, "configured": False}
-
-    try:
-        rest_lat = float(lat_str)
-        rest_lng = float(lng_str)
-    except ValueError:
-        return {"withinRadius": True, "distanceKm": 0.0, "configured": False}
-
-    radius_km = 5.0  # sensible default
-    if radius_str:
-        try:
-            radius_km = max(0.1, float(radius_str))
-        except ValueError:
-            pass
+    rest_lat, rest_lng, radius_km = parse_delivery_settings(settings)
 
     distance = haversine_km(body.customerLat, body.customerLng, rest_lat, rest_lng)
     within = distance <= radius_km

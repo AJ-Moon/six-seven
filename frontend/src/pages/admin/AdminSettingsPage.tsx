@@ -149,7 +149,7 @@ function StoreSettingsTab() {
     useState("20");
   const [pointsExpiryMonths, setPointsExpiryMonths] = useState("12");
   const [rewardsEnabled, setRewardsEnabled] = useState(true);
-  const [deliveryRadiusKm, setDeliveryRadiusKm] = useState("5");
+  const [deliveryRadiusKm, setDeliveryRadiusKm] = useState("3");
   const [restaurantLat, setRestaurantLat] = useState("");
   const [restaurantLng, setRestaurantLng] = useState("");
   const [globalDiscountPercent, setGlobalDiscountPercent] = useState("0");
@@ -180,7 +180,7 @@ function StoreSettingsTab() {
         setRewardsEnabled(
           String(d.rewards_enabled ?? "true").toLowerCase() === "true",
         );
-        setDeliveryRadiusKm(d.delivery_radius_km ?? "5");
+        setDeliveryRadiusKm(d.delivery_radius_km ?? "3");
         setRestaurantLat(d.restaurant_lat ?? "");
         setRestaurantLng(d.restaurant_lng ?? "");
         setGlobalDiscountPercent(d.global_discount_percent ?? "0");
@@ -228,7 +228,7 @@ function StoreSettingsTab() {
         ),
         rewards_enabled: rewardsEnabled ? "true" : "false",
         delivery_radius_km: String(
-          Math.max(1, Math.min(50, Number.parseFloat(deliveryRadiusKm || "5") || 5)),
+          Math.max(1, Math.min(50, Number.parseFloat(deliveryRadiusKm || "3") || 3)),
         ),
         restaurant_lat: restaurantLat,
         restaurant_lng: restaurantLng,

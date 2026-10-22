@@ -1,5 +1,4 @@
 import json
-import math
 from datetime import datetime, timedelta
 from typing import List, Optional
 from zoneinfo import ZoneInfo
@@ -23,6 +22,7 @@ from services.commerce import (
 )
 from services.consent import ensure_customer_with_cursor
 from services.jobs import enqueue_job
+from routers.delivery import haversine_km, parse_delivery_settings
 
 router = APIRouter()
 
@@ -53,8 +53,8 @@ class CreateOrderRequest(BaseModel):
     branchId: Optional[int] = None
     notes: Optional[str] = ""
     pointsToRedeem: int = 0
-    customerLat: Optional[float] = None
-    customerLng: Optional[float] = None
+    customerLat: Optional[float] = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
+    customerLng: Optional[float] = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     cartId: Optional[str] = None
     visitorId: Optional[str] = None
     sessionId: Optional[str] = None
@@ -264,37 +264,18 @@ def create_order(
                 lat_str = _get_setting(cur, "restaurant_lat", restaurant_id, "").strip()
                 lng_str = _get_setting(cur, "restaurant_lng", restaurant_id, "").strip()
                 radius_str = _get_setting(cur, "delivery_radius_km", restaurant_id, "").strip()
-                if lat_str and lng_str:
-                    if body.customerLat is None or body.customerLng is None:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="Please select your Lahore delivery area before placing the order."
-                        )
-                    try:
-                        rest_lat = float(lat_str)
-                        rest_lng = float(lng_str)
-                        radius_km = max(0.1, float(radius_str)) if radius_str else 5.0
-
-                        def _hav(lat1, lng1, lat2, lng2):
-                            R = 6371
-                            dl = (lat2 - lat1) * math.pi / 180
-                            dg = (lng2 - lng1) * math.pi / 180
-                            a = (math.sin(dl / 2) ** 2
-                                 + math.cos(lat1 * math.pi / 180)
-                                 * math.cos(lat2 * math.pi / 180)
-                                 * math.sin(dg / 2) ** 2)
-                            return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-                        dist = _hav(body.customerLat, body.customerLng, rest_lat, rest_lng)
-                        if dist > radius_km:
-                            raise HTTPException(
-                                status_code=400,
-                                detail="Delivery not available to this address."
-                            )
-                    except HTTPException:
-                        raise
-                    except Exception:
-                        pass  # Don't block order if radius check errors
+                if body.customerLat is None or body.customerLng is None:
+                    raise HTTPException(status_code=400, detail="Please pin your delivery address.")
+                if not (-90 <= body.customerLat <= 90 and -180 <= body.customerLng <= 180):
+                    raise HTTPException(status_code=400, detail="Invalid delivery coordinates.")
+                rest_lat, rest_lng, radius_km = parse_delivery_settings({
+                    "restaurant_lat": lat_str,
+                    "restaurant_lng": lng_str,
+                    "delivery_radius_km": radius_str,
+                })
+                dist = haversine_km(body.customerLat, body.customerLng, rest_lat, rest_lng)
+                if dist > radius_km:
+                    raise HTTPException(status_code=400, detail="Delivery not available to this address.")
 
             rewards_cfg = _get_rewards_program_settings(cur, restaurant_id)
 

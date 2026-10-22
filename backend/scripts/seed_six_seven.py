@@ -100,7 +100,7 @@ MEAL_UPGRADE = group(
             "make-meal",
             "Add fries + signature drink",
             630,
-            "Drink choice will be confirmed by Six Seven until the drinks menu is updated.",
+            "Choose your fries and signature drink below.",
             f"{IMG}/meal-upgrade.webp",
         )
     ],
@@ -112,6 +112,19 @@ MEAL_FRIES = group(
     required=True,
     depends_on={"groupId": "meal", "optionId": "make-meal"},
 )
+MEAL_DRINK = group(
+    "meal-drink",
+    "Signature drink",
+    [
+        option("peach-breeze", "Peach Breeze"),
+        option("strawberry-rush", "Strawberry Rush"),
+        option("mango-burst", "Mango Burst"),
+        option("berry-cola", "Berry Cola"),
+    ],
+    required=True,
+    depends_on={"groupId": "meal", "optionId": "make-meal"},
+)
+MEAL_ADDONS = [MEAL_UPGRADE, MEAL_FRIES, MEAL_DRINK]
 BREAD_CHOICE = group(
     "bread",
     "Bread",
@@ -150,9 +163,9 @@ def size_group(options: list[dict]) -> dict:
     return group("size", "Size", options, required=True)
 
 
-CHICKEN_BURGER_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, MEAL_UPGRADE, MEAL_FRIES]
-BEEF_STACK_OPTIONS = [BEEF_TOPPINGS, MEAL_UPGRADE, MEAL_FRIES]
-CHICKEN_WRAP_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, MEAL_UPGRADE, MEAL_FRIES]
+CHICKEN_BURGER_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, *MEAL_ADDONS]
+BEEF_STACK_OPTIONS = [BEEF_TOPPINGS, *MEAL_ADDONS]
+CHICKEN_WRAP_OPTIONS = [PICK_TWO_SAUCES, OPTIONAL_JALAPENOS, CHEESE_ADDON, *MEAL_ADDONS]
 SWEET_OPTIONS = [FLAVOUR_OPTIONS, ICE_CREAM_ADDON, EXTRA_SWEET_SAUCE]
 
 
@@ -294,12 +307,12 @@ MENU = [
     menu_item("Burgers", "Chicken Burgers", "Mighty Grilled Chicken", 730, "Grilled chicken, iceberg, tomato, onion and your choice of 2 sauces. Optional jalapenos are free.", "mighty-grilled-chicken", customizations=CHICKEN_BURGER_OPTIONS),
     menu_item("Burgers", "Chicken Burgers", "Mighty Double Grilled Chicken", 1080, "Double grilled chicken, iceberg, tomato, onion and your choice of 2 sauces. Optional jalapenos are free.", "mighty-double-grilled-chicken", customizations=CHICKEN_BURGER_OPTIONS),
     menu_item("Burgers", "Australian Beef", "Single Stack", 730, "1 beef patty, cheese and 67 Signature Sauce dip. Free lettuce, pickles, jalapenos, onion and tomato available.", "single-stack", featured=True, customizations=BEEF_STACK_OPTIONS),
-    menu_item("Burgers", "Australian Beef", "Double Stack", 1270, "2 beef patties, double cheese and 67 Signature Sauce dip. Free toppings available. Fried egg optional.", "double-stack", popular=True, featured=True, customizations=[BEEF_TOPPINGS, FRIED_EGG, MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Burgers", "Australian Beef", "Double Stack", 1270, "2 beef patties, double cheese and 67 Signature Sauce dip. Free toppings available. Fried egg optional.", "double-stack", popular=True, featured=True, customizations=[BEEF_TOPPINGS, FRIED_EGG, *MEAL_ADDONS]),
     menu_item("Burgers", "Australian Beef", "Triple Stack", 1530, "3 beef patties, triple cheese and 67 Signature Sauce dip. Free lettuce, pickles, jalapenos, onion and tomato available.", "triple-stack", customizations=BEEF_STACK_OPTIONS),
-    menu_item("Burgers", "6-7 Beef Specials", "Mushroom Melt", 1230, "Double beef, cheese and house-made mushroom sauce.", "mushroom-melt", featured=True, customizations=[MEAL_UPGRADE, MEAL_FRIES]),
-    menu_item("Burgers", "6-7 Beef Specials", "Smoky Barbecue Melt", 1370, "Double beef, cheese, iceberg, caramelised onions, BBQ sauce and garlic sauce.", "smoky-barbecue-melt", spicy=True, customizations=[MEAL_UPGRADE, MEAL_FRIES]),
-    menu_item("Chicken Tenders", "Golden Tenders", "Golden Tenders", 670, "Crispy golden-fried chicken with 2 sauce dips.", "golden-tenders", popular=True, customizations=[size_group([option("4-pieces", "4 pieces"), option("6-pieces", "6 pieces", 300)]), PICK_TWO_SAUCES, MEAL_UPGRADE, MEAL_FRIES]),
-    menu_item("Chicken Tenders", "Cheesy Tenders", "Cheesy Tenders", 830, "Crispy tenders loaded with warm cheese sauce.", "cheesy-tenders", customizations=[size_group([option("4-pieces", "4 pieces"), option("6-pieces", "6 pieces", 300)]), MEAL_UPGRADE, MEAL_FRIES]),
+    menu_item("Burgers", "6-7 Beef Specials", "Mushroom Melt", 1230, "Double beef, cheese and house-made mushroom sauce.", "mushroom-melt", featured=True, customizations=MEAL_ADDONS),
+    menu_item("Burgers", "6-7 Beef Specials", "Smoky Barbecue Melt", 1370, "Double beef, cheese, iceberg, caramelised onions, BBQ sauce and garlic sauce.", "smoky-barbecue-melt", spicy=True, customizations=MEAL_ADDONS),
+    menu_item("Chicken Tenders", "Golden Tenders", "Golden Tenders", 670, "Crispy golden-fried chicken with 2 sauce dips.", "golden-tenders", popular=True, customizations=[size_group([option("4-pieces", "4 pieces"), option("6-pieces", "6 pieces", 300)]), PICK_TWO_SAUCES, *MEAL_ADDONS]),
+    menu_item("Chicken Tenders", "Cheesy Tenders", "Cheesy Tenders", 830, "Crispy tenders loaded with warm cheese sauce.", "cheesy-tenders", customizations=[size_group([option("4-pieces", "4 pieces"), option("6-pieces", "6 pieces", 300)]), *MEAL_ADDONS]),
     menu_item("Loaded Fries", "Loaded Fries", "Fully Loaded Chicken Fries", 830, "Fries, chicken, cheese sauce, jalapenos and 2 sauces.", "fully-loaded-chicken-fries", popular=True, featured=True, customizations=[PICK_TWO_SAUCES]),
     menu_item("Fries", "Fries", "Classic Fries", 330, "Golden crispy fries.", "classic-fries"),
     menu_item("Fries", "Fries", "6-7 Masala Fries", 330, "Golden fries tossed in house seasoning.", "six-seven-masala-fries"),
@@ -368,7 +381,7 @@ SETTINGS = {
     "delivery_charge": "150",
     "min_order_amount": "500",
     "restaurant_open": "true",
-    "delivery_radius_km": "5",
+    "delivery_radius_km": "3",
     "restaurant_lat": "31.4641372",
     "restaurant_lng": "74.3822137",
     "points_per_dollar": "1",

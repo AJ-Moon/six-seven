@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock, MapPin, LocateFixed } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
@@ -26,6 +26,7 @@ import { formatMoney } from "@/lib/money";
 import { getOrderingStatus, ORDER_HOURS_TEXT } from "@/lib/order-hours";
 import { PAYMENT_METHODS } from "@/lib/payment";
 import { formatCustomizationText } from "@/lib/customizations";
+import { DeliveryPinMap } from "@/components/delivery-pin-map";
 
 interface Branch {
   id: number;
@@ -43,7 +44,7 @@ interface RewardSettings {
 const STORE_LAT = 31.4641372;
 const STORE_LNG = 74.3822137;
 const STORE_ADDRESS = "Six Seven, 75 CCA, DD Block, DHA Phase 4, Lahore";
-const DELIVERY_RADIUS_KM = 5;
+const DELIVERY_RADIUS_KM = 3;
 
 type DeliveryArea = {
   name: string;
@@ -55,7 +56,7 @@ const LAHORE_DELIVERY_AREAS: DeliveryArea[] = [
   { name: "Aabpara Housing Society", lat: 31.4189, lng: 74.2552 },
   { name: "Abbot Road", lat: 31.5676, lng: 74.3256 },
   { name: "Allama Iqbal Town", lat: 31.5133, lng: 74.2817 },
-  { name: "Askari 10", lat: 31.4838, lng: 74.4055 },
+  { name: "Askari 10", lat: 31.5356, lng: 74.4166 },
   { name: "Askari 11", lat: 31.4663, lng: 74.4312 },
   { name: "Askari 5", lat: 31.5249, lng: 74.3945 },
   { name: "Azam Gardens", lat: 31.4908, lng: 74.3295 },
@@ -186,13 +187,18 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (orderType === "delivery" && customerLat !== null && customerLng !== null) {
       setDeliveryStatus("checking");
+      const controller = new AbortController();
       const timer = setTimeout(() => {
         fetch("/api/check-delivery", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ customerLat, customerLng }),
+          signal: controller.signal,
         })
-          .then((r) => r.json())
+          .then((r) => {
+            if (!r.ok) throw new Error("Delivery distance could not be checked");
+            return r.json();
+          })
           .then((data) => {
              if (typeof data.distanceKm === "number") {
                 setDeliveryDistanceKm(data.distanceKm);
@@ -200,16 +206,25 @@ export default function CheckoutPage() {
              if (typeof data.radiusKm === "number") {
                 setDeliveryRadiusKm(data.radiusKm);
              }
-             if (data.configured === false || data.withinRadius) {
+             if (data.configured && data.withinRadius) {
                 setDeliveryStatus("ok");
              } else {
                 setDeliveryStatus("outside");
-                toast.error(`Outside delivery zone — delivery is only available within ${data.radiusKm || DELIVERY_RADIUS_KM} km`);
+                toast.error(data.configured === false
+                  ? "Delivery is temporarily unavailable. Please try pickup."
+                  : `Outside delivery zone — delivery is only available within ${data.radiusKm || DELIVERY_RADIUS_KM} km`);
              }
           })
-          .catch(() => setDeliveryStatus("idle"));
+          .catch((error) => {
+            if (controller.signal.aborted || error?.name === "AbortError") return;
+            setDeliveryStatus("idle");
+            toast.error("Could not verify this delivery location. Please try again.");
+          });
       }, 300);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        controller.abort();
+      };
     } else {
       setDeliveryStatus("idle");
       setDeliveryDistanceKm(null);
@@ -254,10 +269,6 @@ export default function CheckoutPage() {
   const selectedDeliveryArea = LAHORE_DELIVERY_AREAS.find(
     (area) => area.name === selectedDeliveryAreaName,
   );
-  const deliveryMapSrc =
-    customerLat !== null && customerLng !== null
-      ? `https://www.google.com/maps?output=embed&saddr=${STORE_LAT},${STORE_LNG}&daddr=${customerLat},${customerLng}`
-      : `https://www.google.com/maps?q=${STORE_LAT},${STORE_LNG}&z=15&output=embed`;
   const deliveryDirectionsUrl =
     customerLat !== null && customerLng !== null
       ? `https://www.google.com/maps/dir/?api=1&origin=${STORE_LAT},${STORE_LNG}&destination=${customerLat},${customerLng}`
@@ -272,7 +283,8 @@ export default function CheckoutPage() {
     (!selectedDeliveryArea ||
       deliveryStatus === "outside" ||
       deliveryStatus === "checking" ||
-      (deliveryHasLocation && deliveryStatus !== "ok") ||
+      !deliveryHasLocation ||
+      deliveryStatus !== "ok" ||
       deliveryDetailsMissing);
 
   useEffect(() => {
@@ -308,8 +320,8 @@ export default function CheckoutPage() {
       toast.error(`This address is outside our ${deliveryRadiusKm} km delivery radius.`);
       return;
     }
-    if (orderType === "delivery" && deliveryHasLocation && deliveryStatus !== "ok") {
-      toast.error("Please wait for the delivery range check to finish.");
+    if (orderType === "delivery" && (!deliveryHasLocation || deliveryStatus !== "ok")) {
+      toast.error("Please pin your exact delivery address and wait for the range check.");
       return;
     }
     if (orderType === "delivery" && (!houseNumber.trim() || !streetNumber.trim())) {
@@ -549,19 +561,13 @@ export default function CheckoutPage() {
                         <Select
                           value={selectedDeliveryAreaName}
                           onValueChange={(value) => {
-                            const area = LAHORE_DELIVERY_AREAS.find((item) => item.name === value);
                             setSelectedDeliveryAreaName(value);
                             setStreetNumber("");
                             setHouseNumber("");
                             setDeliveryDistanceKm(null);
-                            if (area) {
-                              setCustomerLat(area.lat);
-                              setCustomerLng(area.lng);
-                            } else {
-                              setCustomerLat(null);
-                              setCustomerLng(null);
-                              setDeliveryStatus("idle");
-                            }
+                            setCustomerLat(null);
+                            setCustomerLng(null);
+                            setDeliveryStatus("idle");
                           }}
                         >
                           <SelectTrigger id="deliveryArea">
@@ -576,32 +582,65 @@ export default function CheckoutPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="overflow-hidden rounded-xl border bg-muted">
-                        <iframe
-                          title="Delivery route from Six Seven"
-                          src={deliveryMapSrc}
-                          className="h-64 w-full border-0"
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          allowFullScreen
-                        />
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <Label>Pin delivery address *</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (!navigator.geolocation) {
+                                toast.error("Location unavailable. Select your address on the map.");
+                                return;
+                              }
+                              navigator.geolocation.getCurrentPosition(
+                                ({ coords }) => {
+                                  setDeliveryStatus("checking");
+                                  setCustomerLat(coords.latitude);
+                                  setCustomerLng(coords.longitude);
+                                },
+                                () => toast.error("Location unavailable. Select your address on the map."),
+                                { enableHighAccuracy: true, timeout: 10000 },
+                              );
+                            }}
+                          >
+                            <LocateFixed className="mr-1.5 h-4 w-4" />
+                            Use my location
+                          </Button>
+                        </div>
+                        <div className="overflow-hidden rounded-lg border bg-muted">
+                          <DeliveryPinMap
+                            store={{ lat: STORE_LAT, lng: STORE_LNG }}
+                            focus={selectedDeliveryArea || { lat: STORE_LAT, lng: STORE_LNG }}
+                            pin={deliveryHasLocation ? { lat: customerLat!, lng: customerLng! } : null}
+                            radiusKm={deliveryRadiusKm}
+                            onPick={({ lat, lng }) => {
+                              setDeliveryStatus("checking");
+                              setCustomerLat(lat);
+                              setCustomerLng(lng);
+                            }}
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-start gap-2">
                           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                           <span>
-                            Delivery starts from {STORE_ADDRESS}. Radius: {deliveryRadiusKm} km.
+                            Delivery starts from {STORE_ADDRESS}. {deliveryRadiusKm} km straight-line radius.
                           </span>
                         </div>
                       </div>
-                      <a
-                        href={deliveryDirectionsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex text-xs font-medium text-primary hover:underline"
-                      >
-                        View route from store in Google Maps
-                      </a>
+                      {deliveryHasLocation && (
+                        <a
+                          href={deliveryDirectionsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex text-xs font-medium text-primary hover:underline"
+                        >
+                          View route from store in Google Maps
+                        </a>
+                      )}
                       {deliveryStatus === "checking" && (
                         <div className="flex items-center text-sm text-muted-foreground mt-1">
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -611,13 +650,13 @@ export default function CheckoutPage() {
                       {deliveryStatus === "ok" && (
                         <div className="flex items-center text-sm text-green-600 mt-1 font-medium">
                           We deliver to your area
-                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km from store)` : ""}
+                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km straight-line from store)` : ""}
                         </div>
                       )}
                       {deliveryStatus === "outside" && (
                         <div className="flex items-center text-sm text-red-600 mt-1 font-medium">
                           Outside delivery zone
-                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km from store)` : ""}.
+                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km straight-line from store)` : ""}.
                           Delivery is available within {deliveryRadiusKm} km only.
                         </div>
                       )}

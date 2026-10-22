@@ -14,9 +14,9 @@ const BUSINESS_IMAGES = [
   `${SITE_URL}/images/six-seven-logo.png`,
 ];
 const LOGO_IMAGE = `${SITE_URL}/images/six-seven-logo.png`;
-// Delivery is a 5 km circle around the branch, not the whole city. Claiming
+// Delivery is a 3 km circle around the branch, not the whole city. Claiming
 // Lahore invites irrelevant impressions and weakens local relevance.
-const DELIVERY_RADIUS_METRES = 5000;
+const DELIVERY_RADIUS_METRES = 3000;
 const STORE_ADDRESS = "75 CCA, DD Block, DHA Phase 4, Lahore";
 const PHONE_TEXT = "+923246756767";
 const ORDERING_URL = `${SITE_URL}/menu`;
@@ -531,7 +531,7 @@ export function SeoMetadata() {
           longitude: 74.3822137,
         },
         geoRadius: DELIVERY_RADIUS_METRES,
-        description: "5 km delivery radius around DHA Phase 4, Lahore",
+        description: "3 km delivery radius around DHA Phase 4, Lahore",
       },
       contactPoint: {
         "@type": "ContactPoint",

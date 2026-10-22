@@ -319,13 +319,17 @@ export default function AdminCurrentOrders() {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {order.items.map((item, i) => (
-                    <span
+                    <div
                       key={i}
-                      className="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-xs"
-                      title={formatCustomizationText(item.customizations || [])}
+                      className="rounded-md bg-secondary px-2 py-1 text-xs"
                     >
-                      {item.quantity}× {item.name}
-                    </span>
+                      <span className="font-medium">{item.quantity}× {item.name}</span>
+                      {item.customizations?.length ? (
+                        <span className="mt-0.5 block max-w-64 text-muted-foreground">
+                          {formatCustomizationText(item.customizations)}
+                        </span>
+                      ) : null}
+                    </div>
                   ))}
                 </div>
                 {order.notes && (
