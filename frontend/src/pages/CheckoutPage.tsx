@@ -44,7 +44,7 @@ interface RewardSettings {
 const STORE_LAT = 31.4641372;
 const STORE_LNG = 74.3822137;
 const STORE_ADDRESS = "Six Seven, 75 CCA, DD Block, DHA Phase 4, Lahore";
-const DELIVERY_RADIUS_KM = 3;
+const DELIVERY_RADIUS_KM = 4;
 
 type DeliveryArea = {
   name: string;

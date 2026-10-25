@@ -381,7 +381,7 @@ SETTINGS = {
     "delivery_charge": "150",
     "min_order_amount": "500",
     "restaurant_open": "true",
-    "delivery_radius_km": "3",
+    "delivery_radius_km": "4",
     "restaurant_lat": "31.4641372",
     "restaurant_lng": "74.3822137",
     "points_per_dollar": "1",

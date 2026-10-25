@@ -38,7 +38,7 @@ def parse_delivery_settings(settings: dict[str, str]) -> tuple[float, float, flo
     try:
         latitude = float(settings["restaurant_lat"])
         longitude = float(settings["restaurant_lng"])
-        radius_km = float(settings.get("delivery_radius_km") or "3")
+        radius_km = float(settings.get("delivery_radius_km") or "4")
         if not all(math.isfinite(value) for value in (latitude, longitude, radius_km)):
             raise ValueError("non-finite delivery setting")
         if not (-90 <= latitude <= 90 and -180 <= longitude <= 180 and radius_km > 0):

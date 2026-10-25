@@ -180,7 +180,7 @@ function StoreSettingsTab() {
         setRewardsEnabled(
           String(d.rewards_enabled ?? "true").toLowerCase() === "true",
         );
-        setDeliveryRadiusKm(d.delivery_radius_km ?? "3");
+        setDeliveryRadiusKm(d.delivery_radius_km ?? "4");
         setRestaurantLat(d.restaurant_lat ?? "");
         setRestaurantLng(d.restaurant_lng ?? "");
         setGlobalDiscountPercent(d.global_discount_percent ?? "0");
