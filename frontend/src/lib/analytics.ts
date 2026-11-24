@@ -25,6 +25,7 @@ type TrackOptions = {
   missionId?: string
   properties?: EventProperties
   consentState?: "unknown" | "essential" | "analytics_granted" | "analytics_denied"
+  metaMatch?: { ph?: string; em?: string }
 }
 
 const VISITOR_KEY = "order_visitor_id"
@@ -32,7 +33,7 @@ const SESSION_KEY = "order_session_id"
 const ATTRIBUTION_KEY = "order_attribution"
 const CART_KEY = "order_cart_id"
 const MAX_QUEUE = 20
-const META_PIXEL_ID = "850716231340911"
+const META_PIXEL_ID = import.meta.env.VITE_DISABLE_META_PIXEL === "true" ? "" : "850716231340911"
 
 let queue: Array<Record<string, unknown>> = []
 let flushTimer: number | null = null
@@ -55,8 +56,17 @@ export const resetCartId = () => localStorage.setItem(CART_KEY, newId("c"))
 
 function getAttribution() {
   const existing = sessionStorage.getItem(ATTRIBUTION_KEY)
-  if (existing) return JSON.parse(existing)
   const params = new URLSearchParams(window.location.search)
+  const fbclid = params.get("fbclid")
+  const observedMetaClick = fbclid && /^[a-zA-Z0-9_-]{1,500}$/.test(fbclid) ? fbclid : undefined
+  if (existing) {
+    const attribution = JSON.parse(existing)
+    if (observedMetaClick && attribution.metaClick?.id !== observedMetaClick) {
+      attribution.metaClick = { id: observedMetaClick, capturedAt: Date.now() }
+      sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(attribution))
+    }
+    return attribution
+  }
   const referrer = document.referrer || ""
   let source = params.get("utm_source") || ""
   let medium = params.get("utm_medium") || ""
@@ -78,9 +88,46 @@ function getAttribution() {
     content: params.get("utm_content") || undefined,
     term: params.get("utm_term") || undefined,
     clickId: params.get("gclid") || params.get("fbclid") || params.get("msclkid") || undefined,
+    metaClick: observedMetaClick ? { id: observedMetaClick, capturedAt: Date.now() } : undefined,
   }
   sessionStorage.setItem(ATTRIBUTION_KEY, JSON.stringify(attribution))
   return attribution
+}
+
+export function normalizePakistaniPhone(phone: string) {
+  let digits = phone.replace(/\D/g, "")
+  if (digits.startsWith("0092")) digits = digits.slice(2)
+  if (digits.startsWith("0")) digits = `92${digits.slice(1)}`
+  if (digits.length === 10) digits = `92${digits}`
+  return /^92[1-9]\d{9}$/.test(digits) ? digits : undefined
+}
+
+export async function checkoutMetaMatch(optedIn: boolean, phone: string, email: string) {
+  if (!optedIn) return undefined
+  const hash = async (value?: string) => {
+    if (!value) return undefined
+    const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))
+    return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, "0")).join("")
+  }
+  try {
+    const [ph, em] = await Promise.all([
+      hash(normalizePakistaniPhone(phone)),
+      hash(email.trim().toLowerCase() || undefined),
+    ])
+    return { ph, em }
+  } catch {
+    return undefined
+  }
+}
+
+function referrerWithoutQuery() {
+  if (!document.referrer) return undefined
+  try {
+    const { origin, pathname } = new URL(document.referrer)
+    return origin + pathname
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -136,10 +183,7 @@ function initializeMetaPixel() {
  * `eventId` is passed as Meta's `eventID` so a matching Conversions API call
  * from the server is de-duplicated against this browser event.
  *
- * A note on `value`, since the two differ deliberately: InitiateCheckout
- * reports merchandise subtotal, Purchase reports what the customer actually
- * paid (delivery included), because that is the revenue ROAS should be
- * measured against.
+ * Checkout and Purchase both report discounted food value without delivery.
  */
 function trackMetaPixelEvent(
   eventName: string,
@@ -188,11 +232,11 @@ function trackMetaPixelEvent(
       return
     }
 
-    case "checkout_started":
+    case "checkout_ad_initiated":
       send("InitiateCheckout", {
-        currency: "PKR",
+        currency: properties.currency || "PKR",
         num_items: properties.itemCount,
-        value: properties.displayedTotal,
+        value: properties.foodValue,
       })
       return
 
@@ -200,7 +244,7 @@ function trackMetaPixelEvent(
       if (properties.step !== "ORDER_CONFIRMED") return
       send("Purchase", {
         currency: properties.currency || "PKR",
-        value: properties.total,
+        value: properties.foodValue ?? properties.total,
       })
       return
 
@@ -239,8 +283,8 @@ export function track(eventName: string, options: TrackOptions = {}) {
     visitorId,
     sessionId: getSessionId(),
     occurredAt: new Date().toISOString(),
-    pagePath: `${window.location.pathname}${window.location.search}`,
-    referrer: document.referrer || undefined,
+    pagePath: window.location.pathname,
+    referrer: referrerWithoutQuery(),
     ...attribution,
     itemId: options.itemId,
     categoryId: options.categoryId,
@@ -250,6 +294,7 @@ export function track(eventName: string, options: TrackOptions = {}) {
     variantId: options.variantId,
     missionId: options.missionId,
     properties,
+    metaMatch: options.consentState === "analytics_granted" ? options.metaMatch : undefined,
     schemaVersion: 1,
     consentState: options.consentState || "unknown",
   })

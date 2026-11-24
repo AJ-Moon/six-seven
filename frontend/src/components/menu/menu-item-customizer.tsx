@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ type Props = {
   item: PublicMenuItem | null;
   open: boolean;
   currencySymbol?: string;
+  notice?: ReactNode;
   onOpenChange: (open: boolean) => void;
   onConfirm: (details: { customizations: SelectedCustomization[]; modifierTotal: number }) => void;
 };
@@ -54,6 +55,7 @@ export function MenuItemCustomizer({
   item,
   open,
   currencySymbol,
+  notice,
   onOpenChange,
   onConfirm,
 }: Props) {
@@ -155,10 +157,11 @@ export function MenuItemCustomizer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-2xl gap-0 p-0">
+      <DialogContent className="max-h-[92dvh] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0">
         <DialogHeader className="border-b border-border px-5 py-4 pr-12">
           <DialogTitle>{item.name}</DialogTitle>
           <DialogDescription className={item.category === "Deals" ? "max-h-24 overflow-y-auto" : "line-clamp-2"}>{item.description}</DialogDescription>
+          {notice}
         </DialogHeader>
         <ScrollArea className="max-h-[62vh]">
           <div className="space-y-5 p-5">

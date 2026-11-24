@@ -16,7 +16,7 @@ export function AnalyticsBridge() {
 
   useEffect(() => {
     track("page_viewed", { properties: { title: document.title } })
-  }, [location.pathname, location.search])
+  }, [location.pathname])
 
   return null
 }

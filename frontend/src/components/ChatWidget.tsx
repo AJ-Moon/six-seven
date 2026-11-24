@@ -70,23 +70,26 @@ function OrderSuccessBubble({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ChatWidget() {
+export default function ChatWidget({ inline = false }: { inline?: boolean }) {
   const location = useLocation();
   const { restaurantName, primaryColor } = useRestaurant();
 
   // Hide on all admin routes
   const isAdmin = location.pathname.startsWith("/admin");
-  if (isAdmin) return null;
+  if (isAdmin || /^\/(cart|checkout|order-confirmation)(\/|$)/.test(location.pathname)) return null;
+  if (/^\/menu\/?$/.test(location.pathname) && !inline) return null;
 
-  return <ChatWidgetInner primaryColor={primaryColor} restaurantName={restaurantName} />;
+  return <ChatWidgetInner primaryColor={primaryColor} restaurantName={restaurantName} inline={inline} />;
 }
 
 function ChatWidgetInner({
   primaryColor,
   restaurantName,
+  inline,
 }: {
   primaryColor: string;
   restaurantName: string;
+  inline: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -104,7 +107,7 @@ function ChatWidgetInner({
   useEffect(() => {
     const saved = sessionStorage.getItem("chat_session_id");
     if (saved) setSessionId(saved);
-    else {
+    else if (!inline) {
       // Show the welcome bubble after 2 seconds if no prior session exists,
       // then retire it — on a phone it sits over the menu grid, so it should
       // never be the thing standing between a customer and a product card.
@@ -115,7 +118,7 @@ function ChatWidgetInner({
         clearTimeout(hide);
       };
     }
-  }, []);
+  }, [inline]);
 
   // Welcome message on first open
   useEffect(() => {
@@ -241,7 +244,7 @@ function ChatWidgetInner({
           position: fixed;
           bottom: 24px;
           right: 24px;
-          z-index: 9999;
+          z-index: 35;
           width: 56px;
           height: 56px;
           border-radius: 50%;
@@ -267,6 +270,16 @@ function ChatWidgetInner({
         }
         @media (prefers-reduced-motion: reduce) {
           .chat-trigger, .chat-welcome-bubble { transition: none; animation: none; }
+        }
+        .chat-trigger.chat-trigger-inline {
+          position: relative;
+          inset: auto;
+          z-index: auto;
+          width: 40px;
+          height: 40px;
+        }
+        body:has([role="dialog"][data-state="open"]) :is(.chat-trigger, .chat-welcome-bubble, .chat-panel) {
+          visibility: hidden;
         }
 
         .chat-unread-dot {
@@ -540,7 +553,7 @@ function ChatWidgetInner({
       {/* Trigger button */}
       <button
         id="chat-widget-trigger"
-        className="chat-trigger"
+        className={inline ? "chat-trigger chat-trigger-inline ml-auto" : "chat-trigger"}
         onClick={() => {
           setOpen((o) => !o);
           setShowWelcomeBubble(false);

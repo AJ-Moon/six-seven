@@ -31,6 +31,9 @@ import { track } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
 import { srcSetFor } from "@/lib/images";
 import { MenuItemCustomizer } from "@/components/menu/menu-item-customizer";
+import ChatWidget from "@/components/ChatWidget";
+import { OrderingAvailability } from "@/components/ordering-availability";
+import { useOrderingStatus } from "@/hooks/use-ordering-status";
 import { SITE_URL, setJsonLd, removeJsonLd } from "@/components/SeoMetadata";
 import type { PublicMenuItem, SelectedCustomization } from "@/types/menu";
 
@@ -44,6 +47,7 @@ const toTitle = (value: string) =>
 export default function MenuPage() {
   const { addItem } = useCart();
   const { restaurantName, menuSubtitle, currencySymbol } = useRestaurant();
+  const ordering = useOrderingStatus();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState(
@@ -269,6 +273,11 @@ export default function MenuPage() {
             </p>
           </div>
         </section>
+
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-3 lg:px-8">
+          <OrderingAvailability status={ordering} />
+          {!customizingItem && <ChatWidget inline />}
+        </div>
 
         {/* Filters Bar */}
         <section className="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -541,6 +550,7 @@ export default function MenuPage() {
         item={customizingItem}
         open={Boolean(customizingItem)}
         currencySymbol={currencySymbol}
+        notice={<OrderingAvailability status={ordering} />}
         onOpenChange={(open) => {
           if (!open) setCustomizingItem(null);
         }}

@@ -78,7 +78,7 @@ const DEFAULTS: RestaurantTheme = {
   footerTagline:
     "Fresh ingredients, bold flavors, and fast delivery. Experience the taste of perfection with every order.",
   menuSubtitle:
-    "From flame-grilled burgers to wood-fired pizzas, explore flavors crafted with passion.",
+    "Explore beef burgers, crispy chicken, loaded fries and specialty coffee.",
   contactReplyTime: "We reply within 24 hours",
   contactHoursNote:
     "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)",

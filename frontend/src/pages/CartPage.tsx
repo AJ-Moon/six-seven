@@ -16,11 +16,14 @@ import { useRestaurant } from "@/contexts/RestaurantContext";
 import { MissionBundleCard } from "@/components/MissionBundleCard";
 import { formatMoney } from "@/lib/money";
 import { formatCustomizationText } from "@/lib/customizations";
+import { OrderingAvailability } from "@/components/ordering-availability";
+import { useOrderingStatus } from "@/hooks/use-ordering-status";
 
 export default function CartPage() {
   const { items, removeItem, updateQty, total, clearCart } = useCart();
   const { deliveryCharge, minOrderAmount, currencySymbol } = useRestaurant();
   const navigate = useNavigate();
+  const ordering = useOrderingStatus();
 
   const deliveryLabel =
     deliveryCharge > 0 ? `${formatMoney(deliveryCharge, currencySymbol)}` : "Free delivery";
@@ -32,6 +35,7 @@ export default function CartPage() {
       <div className="min-h-screen bg-background">
         <Navbar />
         <main className="pb-20 md:pb-0">
+          <div className="mx-auto max-w-lg px-4 pt-4"><OrderingAvailability status={ordering} /></div>
           <div className="mx-auto flex max-w-lg flex-col items-center justify-center px-4 py-24 text-center">
             <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
               <ShoppingCart className="h-12 w-12 text-muted-foreground" />
@@ -211,14 +215,16 @@ export default function CartPage() {
                     </p>
                   )}
                 </div>
-                <Button
-                  className="mt-6 w-full"
+                <div className="mt-6">
+                {ordering.open ? <Button
+                  className="w-full"
                   size="lg"
                   onClick={() => navigate("/checkout")}
                 >
                   Proceed to Checkout
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                </Button> : <OrderingAvailability status={ordering} />}
+                </div>
               </div>
             </div>
           </div>

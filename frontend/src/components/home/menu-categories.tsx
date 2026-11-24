@@ -118,7 +118,7 @@ export function MenuCategories() {
             Explore Our Menu
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
-            From flame-grilled burgers to wood-fired pizzas, discover flavors
+            From beef burgers and loaded fries to specialty coffee, discover flavors
             that make every bite memorable.
           </p>
         </div>

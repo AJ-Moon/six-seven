@@ -16,7 +16,7 @@ export function DeliveryPinMap({ store, focus, pin, radiusKm, onPick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const zoneRef = useRef<L.Circle | null>(null);
-  const pinRef = useRef<L.CircleMarker | null>(null);
+  const pinRef = useRef<L.Marker | null>(null);
   const onPickRef = useRef(onPick);
 
   onPickRef.current = onPick;
@@ -32,7 +32,7 @@ export function DeliveryPinMap({ store, focus, pin, radiusKm, onPick }: Props) {
       maxZoom: 19,
     }).addTo(map);
     const zone = L.circle([store.lat, store.lng], {
-      radius: radiusKm * 1000,
+      radius: 0,
       color: "#e36616",
       fillColor: "#e36616",
       fillOpacity: 0.08,
@@ -60,7 +60,7 @@ export function DeliveryPinMap({ store, focus, pin, radiusKm, onPick }: Props) {
 
   useEffect(() => {
     zoneRef.current?.setRadius(radiusKm * 1000);
-  }, [radiusKm]);
+  }, [radiusKm, store.lat, store.lng]);
 
   useEffect(() => {
     mapRef.current?.setView(
@@ -80,13 +80,20 @@ export function DeliveryPinMap({ store, focus, pin, radiusKm, onPick }: Props) {
     if (pinRef.current) {
       pinRef.current.setLatLng([pin.lat, pin.lng]);
     } else {
-      pinRef.current = L.circleMarker([pin.lat, pin.lng], {
-        radius: 9,
-        color: "#fff",
-        fillColor: "#e36616",
-        fillOpacity: 1,
-        weight: 2,
-      }).bindTooltip("Delivery address").addTo(map);
+      const marker = L.marker([pin.lat, pin.lng], {
+        draggable: true,
+        title: "Drag to adjust your delivery address",
+        icon: L.divIcon({
+          className: "rounded-full border-2 border-white bg-orange-600 shadow-md",
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      });
+      marker.on("dragend", () => {
+        const { lat, lng } = marker.getLatLng();
+        onPickRef.current({ lat, lng });
+      });
+      pinRef.current = marker.bindTooltip("Delivery address").addTo(map);
     }
   }, [pin]);
 

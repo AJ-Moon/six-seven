@@ -16,14 +16,15 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock, MapPin, LocateFixed } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Star, Loader2, PenLine, Clock, LocateFixed } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRestaurant } from "@/contexts/RestaurantContext";
 import { toast } from "sonner";
-import { getCartId, getSessionId, getVisitorId, track } from "@/lib/analytics";
+import { checkoutMetaMatch, getCartId, getSessionId, getVisitorId, track } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
 import { getOrderingStatus, ORDER_HOURS_TEXT } from "@/lib/order-hours";
+import { useOrderingStatus } from "@/hooks/use-ordering-status";
 import { PAYMENT_METHODS } from "@/lib/payment";
 import { formatCustomizationText } from "@/lib/customizations";
 import { DeliveryPinMap } from "@/components/delivery-pin-map";
@@ -33,12 +34,15 @@ interface Branch {
   name: string;
   city: string;
   isOpen: boolean;
+  isDefault?: boolean;
 }
 
 interface RewardSettings {
   mode: string;
   minRedeem: number;
   conversionRate: number;
+  maxDiscountPercent?: number;
+  rewardsEnabled?: boolean;
 }
 
 const STORE_LAT = 31.4641372;
@@ -117,10 +121,19 @@ const LAHORE_DELIVERY_AREAS: DeliveryArea[] = [
   { name: "Walton Road", lat: 31.4834, lng: 74.3579 },
 ];
 
+function distanceFromStore({ lat, lng }: DeliveryArea) {
+  const radians = Math.PI / 180;
+  const a = Math.sin((lat - STORE_LAT) * radians / 2) ** 2
+    + Math.cos(STORE_LAT * radians) * Math.cos(lat * radians)
+    * Math.sin((lng - STORE_LNG) * radians / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
+}
+
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { user, token } = useAuth();
-  const { deliveryCharge, minOrderAmount, currencySymbol, cashOnDelivery } = useRestaurant();
+  const { deliveryCharge, minOrderAmount, currencySymbol, cashOnDelivery, restaurantOpen, closedMessage } = useRestaurant();
+  const orderingStatus = useOrderingStatus();
   const navigate = useNavigate();
 
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -133,10 +146,9 @@ export default function CheckoutPage() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState(user?.phone || "");
-  const [address, setAddress] = useState("");
+  const [shareAdMatch, setShareAdMatch] = useState(false);
   const [selectedDeliveryAreaName, setSelectedDeliveryAreaName] = useState("");
-  const [streetNumber, setStreetNumber] = useState("");
-  const [houseNumber, setHouseNumber] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [orderType, setOrderType] = useState<"delivery" | "pickup">(
     "delivery",
   );
@@ -145,32 +157,28 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderingStatus, setOrderingStatus] = useState(() =>
-    getOrderingStatus(),
-  );
-  const [customerLat, setCustomerLat] = useState<number | null>(null);
-  const [customerLng, setCustomerLng] = useState<number | null>(null);
-  const [deliveryStatus, setDeliveryStatus] = useState<"idle" | "checking" | "ok" | "outside">("idle");
+  const [submitError, setSubmitError] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [deliveryPin, setDeliveryPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapFocus, setMapFocus] = useState({ lat: STORE_LAT, lng: STORE_LNG });
+  const [deliveryStatus, setDeliveryStatus] = useState<"idle" | "checking" | "ok" | "outside" | "error">("idle");
   const [deliveryDistanceKm, setDeliveryDistanceKm] = useState<number | null>(null);
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(DELIVERY_RADIUS_KM);
   // Prevent the empty-cart redirect from firing after a successful order submission
   const submittedRef = useRef(false);
+  const submittingRef = useRef(false);
   const checkoutTrackedRef = useRef(false);
+  const contactTrackedRef = useRef(false);
+  const adInitiatedRef = useRef(false);
 
   useEffect(() => {
-    if (checkoutTrackedRef.current) return
+    if (!items.length || checkoutTrackedRef.current) return
     checkoutTrackedRef.current = true
     track("checkout_started", {
       cartId: getCartId(),
-      properties: { itemCount: items.length, displayedTotal: total },
+      properties: { itemCount: items.length, displayedTotal: total, firstPartyOnly: true },
     })
   }, [items.length, total])
-
-  useEffect(() => {
-    const updateOrderingStatus = () => setOrderingStatus(getOrderingStatus());
-    const interval = window.setInterval(updateOrderingStatus, 60_000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (!cashOnDelivery && paymentMethod === "cash") {
@@ -185,14 +193,14 @@ export default function CheckoutPage() {
   }, [items, navigate]);
 
   useEffect(() => {
-    if (orderType === "delivery" && customerLat !== null && customerLng !== null) {
+    if (orderType === "delivery" && deliveryPin) {
       setDeliveryStatus("checking");
       const controller = new AbortController();
       const timer = setTimeout(() => {
         fetch("/api/check-delivery", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customerLat, customerLng }),
+          body: JSON.stringify({ customerLat: deliveryPin.lat, customerLng: deliveryPin.lng }),
           signal: controller.signal,
         })
           .then((r) => {
@@ -200,25 +208,19 @@ export default function CheckoutPage() {
             return r.json();
           })
           .then((data) => {
+             if (controller.signal.aborted) return;
              if (typeof data.distanceKm === "number") {
                 setDeliveryDistanceKm(data.distanceKm);
              }
              if (typeof data.radiusKm === "number") {
                 setDeliveryRadiusKm(data.radiusKm);
              }
-             if (data.configured && data.withinRadius) {
-                setDeliveryStatus("ok");
-             } else {
-                setDeliveryStatus("outside");
-                toast.error(data.configured === false
-                  ? "Delivery is temporarily unavailable. Please try pickup."
-                  : `Outside delivery zone — delivery is only available within ${data.radiusKm || DELIVERY_RADIUS_KM} km`);
-             }
+             setDeliveryStatus(!data.configured ? "error" : data.withinRadius ? "ok" : "outside");
+             track("delivery_area_checked", { properties: { step: "DELIVERY_LOCATION", available: Boolean(data.configured && data.withinRadius) } });
           })
           .catch((error) => {
             if (controller.signal.aborted || error?.name === "AbortError") return;
-            setDeliveryStatus("idle");
-            toast.error("Could not verify this delivery location. Please try again.");
+            setDeliveryStatus("error");
           });
       }, 300);
       return () => {
@@ -229,13 +231,13 @@ export default function CheckoutPage() {
       setDeliveryStatus("idle");
       setDeliveryDistanceKm(null);
     }
-  }, [customerLat, customerLng, orderType]);
+  }, [deliveryPin, orderType]);
 
   useEffect(() => {
     fetch("/api/branches")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((data) => {
-        setBranches(data.filter((b: Branch) => b.isOpen));
+        if (Array.isArray(data)) setBranches(data.filter((b: Branch) => b.isOpen));
       })
       .catch(() => {});
 
@@ -258,89 +260,92 @@ export default function CheckoutPage() {
   const effectiveDelivery = orderType === "delivery" ? deliveryCharge : 0;
   const belowMinimum = minOrderAmount > 0 && total < minOrderAmount;
 
+  const pointValueCents = Math.round((rewardSettings?.conversionRate || 0) * 100);
+  const maxDiscountCents = Math.round(Math.round(total * 100) * (rewardSettings?.maxDiscountPercent ?? 20) / 100);
   const pointsDiscount =
-    rewardSettings &&
+    rewardSettings && rewardSettings.rewardsEnabled !== false && pointValueCents > 0 &&
     userPoints >= rewardSettings.minRedeem &&
     pointsToRedeem >= rewardSettings.minRedeem
-      ? Math.min(pointsToRedeem * rewardSettings.conversionRate, total * 0.5)
+      ? Math.min(pointsToRedeem, userPoints, Math.floor(maxDiscountCents / pointValueCents)) * pointValueCents / 100
       : 0;
 
   const finalTotal = Math.max(0, total + effectiveDelivery - pointsDiscount);
-  const selectedDeliveryArea = LAHORE_DELIVERY_AREAS.find(
-    (area) => area.name === selectedDeliveryAreaName,
-  );
-  const deliveryDirectionsUrl =
-    customerLat !== null && customerLng !== null
-      ? `https://www.google.com/maps/dir/?api=1&origin=${STORE_LAT},${STORE_LNG}&destination=${customerLat},${customerLng}`
-      : `https://www.google.com/maps/search/?api=1&query=${STORE_LAT},${STORE_LNG}`;
-  const deliveryHasLocation = customerLat !== null && customerLng !== null;
-  const deliveryDetailsMissing =
-    orderType === "delivery" &&
-    deliveryStatus === "ok" &&
-    (!streetNumber.trim() || !houseNumber.trim());
-  const deliveryBlocked =
-    orderType === "delivery" &&
-    (!selectedDeliveryArea ||
-      deliveryStatus === "outside" ||
-      deliveryStatus === "checking" ||
-      !deliveryHasLocation ||
-      deliveryStatus !== "ok" ||
-      deliveryDetailsMissing);
-
-  useEffect(() => {
-    if (orderType !== "delivery") return;
-
-    const parts = [
-      houseNumber.trim() ? `House ${houseNumber.trim()}` : "",
-      streetNumber.trim() ? `Street ${streetNumber.trim()}` : "",
-      selectedDeliveryArea?.name || "",
-      "Lahore",
-    ].filter(Boolean);
-
-    setAddress(parts.join(", "));
-  }, [houseNumber, orderType, selectedDeliveryArea?.name, streetNumber]);
+  const deliveryAreas = LAHORE_DELIVERY_AREAS.filter((area) => distanceFromStore(area) <= deliveryRadiusKm);
+  const pickupBranch = branches.find((branch) => branch.id === branchId)
+    ?? branches.find((branch) => branch.isDefault)
+    ?? (branches.length === 1 ? branches[0] : undefined);
+  const pickLocation = (pin: { lat: number; lng: number }) => {
+    setDeliveryPin(pin);
+    setDeliveryStatus("checking");
+    setDeliveryDistanceKm(null);
+    setSubmitError("");
+  };
+  const showError = (message: string, id?: string) => {
+    setSubmitError(message);
+    if (id) {
+      const field = document.getElementById(id);
+      field?.scrollIntoView({ block: "center" });
+      field?.focus({ preventScroll: true });
+    }
+    toast.error(message);
+  };
+  const contactPhone = user ? user.phone || "" : guestPhone.trim();
+  const contactEmail = user ? user.email || "" : guestEmail.trim();
+  const consentState = shareAdMatch ? "analytics_granted" : "unknown";
+  const recordCheckoutContact = (submitting = false) => {
+    if (!items.length || (!user && (!guestName.trim() || !contactPhone))) return;
+    if (!user && contactEmail && document.querySelector<HTMLInputElement>("#guestEmail")?.validity.typeMismatch) return;
+    const cartId = getCartId();
+    if (!contactTrackedRef.current) {
+      contactTrackedRef.current = true;
+      track("checkout_contact_ready", { cartId, properties: { step: "CONTACT_READY" } });
+    }
+    if (adInitiatedRef.current || (!shareAdMatch && !submitting)) return;
+    adInitiatedRef.current = true;
+    const foodValue = Math.max(0, Math.round((total - pointsDiscount) * 100) / 100);
+    void checkoutMetaMatch(shareAdMatch, contactPhone, contactEmail).then((metaMatch) => {
+      track("checkout_ad_initiated", {
+        cartId, metaMatch, consentState,
+        properties: { itemCount: items.length, foodValue, currency: "PKR" },
+      });
+    }).catch(() => {});
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return;
+    if (items.length === 0 || submittingRef.current || submittedRef.current) return;
+    setSubmitError("");
+    track("checkout_step_viewed", { properties: { step: "PLACE_ORDER_CLICK", orderType } });
+    const currentOrderingStatus = getOrderingStatus(new Date(), restaurantOpen !== "false", closedMessage);
+    if (!currentOrderingStatus.open) return showError(currentOrderingStatus.message);
+    if (belowMinimum) {
+      track("minimum_order_blocked", { properties: { step: "PLACE_ORDER" } });
+      return showError(`Add ${formatMoney(minOrderAmount - total, currencySymbol)} to reach the minimum order.`);
+    }
+    if (!user && !guestName.trim()) return showError("Enter your name.", "guestName");
+    if (!user && !guestPhone.trim()) return showError("Enter your phone number.", "guestPhone");
+    if (!user && e.currentTarget instanceof HTMLFormElement
+        && e.currentTarget.querySelector<HTMLInputElement>("#guestEmail")?.validity.typeMismatch) {
+      return showError("Enter a valid email or leave it blank.", "guestEmail");
+    }
+    recordCheckoutContact(true);
+    if (orderType === "delivery") {
+      if (!deliveryPin) return showError("Choose your delivery location.", "delivery-location");
+      if (deliveryStatus === "checking") return showError("Wait a moment while we check your location.", "delivery-location");
+      if (deliveryStatus === "outside") return showError(`This location is outside our ${deliveryRadiusKm} km radius. Adjust the pin or choose Pickup.`, "delivery-location");
+      if (deliveryStatus !== "ok") return showError("We couldn't verify this pin. Retry the check or choose Pickup.", "delivery-location");
+      if (!deliveryAddress.trim()) return showError("Add your house, street and block.", "deliveryAddress");
+    }
+    if (orderType === "pickup" && !pickupBranch) return showError(
+      branches.length ? "Choose a pickup branch." : "Pickup is unavailable. Try delivery or reload to check for open branches.",
+      "pickupBranch",
+    );
 
-    if (!user && !guestName.trim()) {
-      toast.error("Please enter your name");
-      return;
-    }
-    if (!user && !guestPhone.trim()) {
-      toast.error("Please enter your phone number");
-      return;
-    }
-    if (orderType === "delivery" && !selectedDeliveryArea) {
-      toast.error("Please select your area in Lahore");
-      return;
-    }
-    if (orderType === "delivery" && deliveryStatus === "outside") {
-      toast.error(`This address is outside our ${deliveryRadiusKm} km delivery radius.`);
-      return;
-    }
-    if (orderType === "delivery" && (!deliveryHasLocation || deliveryStatus !== "ok")) {
-      toast.error("Please pin your exact delivery address and wait for the range check.");
-      return;
-    }
-    if (orderType === "delivery" && (!houseNumber.trim() || !streetNumber.trim())) {
-      toast.error("Please enter your house and street details");
-      return;
-    }
-    if (orderType === "pickup" && !branchId) {
-      toast.error("Please select a branch for pickup");
-      return;
-    }
-    const currentOrderingStatus = getOrderingStatus();
-    setOrderingStatus(currentOrderingStatus);
-    if (!currentOrderingStatus.open) {
-      toast.error(currentOrderingStatus.message);
-      return;
-    }
-
+    submittingRef.current = true;
     setIsSubmitting(true);
+    let responseStatus: number | undefined;
     try {
+      track("checkout_step_viewed", { cartId: getCartId(), properties: { step: "PLACE_ORDER", orderType } });
       const payload: Record<string, unknown> = {
         items: items.map((i) => ({
           menuItemId: i.menuItemId,
@@ -351,12 +356,14 @@ export default function CheckoutPage() {
         })),
         orderType,
         paymentMethod: orderType === "pickup" ? "pay_on_pickup" : paymentMethod,
-        address,
-        branchId,
+        address: orderType === "delivery"
+          ? [deliveryAddress.trim(), selectedDeliveryAreaName, "Lahore"].filter(Boolean).join(", ")
+          : "",
+        branchId: orderType === "pickup" ? pickupBranch?.id : undefined,
         notes: notes.trim(),
         pointsToRedeem,
-        customerLat,
-        customerLng,
+        customerLat: orderType === "delivery" ? deliveryPin?.lat : undefined,
+        customerLng: orderType === "delivery" ? deliveryPin?.lng : undefined,
         cartId: getCartId(),
         visitorId: getVisitorId(),
         sessionId: getSessionId(),
@@ -378,28 +385,39 @@ export default function CheckoutPage() {
         headers,
         body: JSON.stringify(payload),
       });
+      responseStatus = res.status;
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Failed to place order");
+        throw new Error(typeof err.detail === "string"
+          ? err.detail
+          : res.status >= 500
+            ? "The ordering service is unavailable right now. Please contact the store before retrying."
+            : "Check your order details and try again.");
       }
 
       const order = await res.json();
-      track("checkout_step_completed", {
-        cartId: order.cartId,
-        orderId: order.id,
-        properties: { step: "ORDER_CONFIRMED", total: order.total, currency: order.currency },
-        consentState: "essential",
-      })
       submittedRef.current = true;
+      const foodValue = Math.max(0, Math.round((order.subtotal - order.discountAmount) * 100) / 100);
+      void checkoutMetaMatch(shareAdMatch, contactPhone, contactEmail).then((metaMatch) => {
+        track("checkout_step_completed", {
+          cartId: order.cartId,
+          orderId: order.id,
+          metaMatch,
+          consentState,
+          properties: { step: "ORDER_CONFIRMED", foodValue, currency: order.currency },
+        });
+      }).catch(() => {});
       clearCart();
       const trackPhone = !user ? guestPhone.trim() : (user.phone || "");
       navigate(`/order-confirmation/${order.id}`, { state: { order, trackPhone } });
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to place order";
-      toast.error(message);
+      track("payment_failed", { properties: { step: "PLACE_ORDER", httpStatus: responseStatus } });
+      showError(message);
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -422,7 +440,7 @@ export default function CheckoutPage() {
             </h1>
           </div>
 
-          <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-3">
+          <form noValidate onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-3">
             {/* Left — Details */}
             <div className="lg:col-span-2 space-y-6">
               <Card>
@@ -451,10 +469,14 @@ export default function CheckoutPage() {
                   <p className="text-xs text-muted-foreground">
                     {orderingStatus.message}
                   </p>
+                  {orderingStatus.note && <p className="text-xs text-muted-foreground">{orderingStatus.note}</p>}
                 </CardContent>
               </Card>
 
               {/* Guest / User Info */}
+              <div onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) recordCheckoutContact();
+              }}>
               {!user ? (
                 <Card>
                   <CardContent className="pt-6 space-y-4">
@@ -474,6 +496,7 @@ export default function CheckoutPage() {
                         <Label htmlFor="guestName">Full Name *</Label>
                         <Input
                           id="guestName"
+                          autoComplete="name"
                           placeholder="Your name"
                           value={guestName}
                           onChange={(e) => setGuestName(e.target.value)}
@@ -485,6 +508,7 @@ export default function CheckoutPage() {
                         <Input
                           id="guestPhone"
                           type="tel"
+                          autoComplete="tel"
                           placeholder="Your phone number"
                           value={guestPhone}
                           onChange={(e) => setGuestPhone(e.target.value)}
@@ -497,6 +521,7 @@ export default function CheckoutPage() {
                         <Input
                           id="guestEmail"
                           type="email"
+                          autoComplete="email"
                           placeholder="Your email"
                           value={guestEmail}
                           onChange={(e) => setGuestEmail(e.target.value)}
@@ -521,6 +546,16 @@ export default function CheckoutPage() {
                   </CardContent>
                 </Card>
               )}
+              <label className="mt-2 flex items-start gap-2 px-1 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={shareAdMatch}
+                  onChange={(event) => setShareAdMatch(event.target.checked)}
+                  className="mt-0.5 accent-primary"
+                />
+                Allow sharing my hashed phone and email with Meta to measure ads (optional).
+              </label>
+              </div>
 
               {/* Order Type */}
               <Card>
@@ -532,16 +567,9 @@ export default function CheckoutPage() {
                         key={type}
                         type="button"
                         onClick={() => {
+                          if (type !== orderType && type === "delivery" && deliveryPin) setDeliveryStatus("checking");
                           setOrderType(type);
-                          setBranchId(undefined);
-                          if (type === "pickup") {
-                            setSelectedDeliveryAreaName("");
-                            setStreetNumber("");
-                            setHouseNumber("");
-                            setAddress("");
-                            setCustomerLat(null);
-                            setCustomerLng(null);
-                          }
+                          setSubmitError("");
                         }}
                         className={`rounded-lg border p-3 text-sm font-medium capitalize transition-colors ${
                           orderType === type
@@ -555,181 +583,123 @@ export default function CheckoutPage() {
                   </div>
 
                   {orderType === "delivery" && (
-                    <div className="space-y-3">
+                    <div className="space-y-3" id="delivery-location" tabIndex={-1}>
+                      <p className="text-sm text-muted-foreground">
+                        Delivery covers about {deliveryRadiusKm} km from DHA Phase 4. Further away? Choose Pickup.
+                      </p>
+                      <Button
+                        type="button"
+                        className="w-full"
+                        disabled={locating}
+                        onClick={() => {
+                          if (!navigator.geolocation) {
+                            showError("Location is unavailable. Choose an area or drop a pin.");
+                            return;
+                          }
+                          setLocating(true);
+                          navigator.geolocation.getCurrentPosition(
+                            ({ coords }) => {
+                              setLocating(false);
+                              const pin = { lat: coords.latitude, lng: coords.longitude };
+                              setSelectedDeliveryAreaName("");
+                              setMapFocus(pin);
+                              pickLocation(pin);
+                            },
+                            () => {
+                              setLocating(false);
+                              showError("Couldn't get your location. Choose an area or drop a pin.");
+                            },
+                            { enableHighAccuracy: true, timeout: 10000 },
+                          );
+                        }}
+                      >
+                        {locating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
+                        {locating ? "Finding your location..." : "Use my location"}
+                      </Button>
+
                       <div className="space-y-1.5">
-                        <Label htmlFor="deliveryArea">Delivery Area *</Label>
+                        <Label htmlFor="deliveryArea">Nearby area (optional)</Label>
                         <Select
                           value={selectedDeliveryAreaName}
                           onValueChange={(value) => {
+                            const area = deliveryAreas.find((candidate) => candidate.name === value);
+                            if (!area) return;
                             setSelectedDeliveryAreaName(value);
-                            setStreetNumber("");
-                            setHouseNumber("");
-                            setDeliveryDistanceKm(null);
-                            setCustomerLat(null);
-                            setCustomerLng(null);
-                            setDeliveryStatus("idle");
+                            setMapFocus(area);
+                            pickLocation(area);
                           }}
                         >
                           <SelectTrigger id="deliveryArea">
-                            <SelectValue placeholder="Select your area in Lahore" />
+                            <SelectValue placeholder="Choose an area to center the pin" />
                           </SelectTrigger>
                           <SelectContent className="max-h-72">
-                            {LAHORE_DELIVERY_AREAS.map((area) => (
-                              <SelectItem key={area.name} value={area.name}>
-                                {area.name}
-                              </SelectItem>
+                            {deliveryAreas.map((area) => (
+                              <SelectItem key={area.name} value={area.name}>{area.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
+
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-3">
-                          <Label>Pin delivery address *</Label>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (!navigator.geolocation) {
-                                toast.error("Location unavailable. Select your address on the map.");
-                                return;
-                              }
-                              navigator.geolocation.getCurrentPosition(
-                                ({ coords }) => {
-                                  setDeliveryStatus("checking");
-                                  setCustomerLat(coords.latitude);
-                                  setCustomerLng(coords.longitude);
-                                },
-                                () => toast.error("Location unavailable. Select your address on the map."),
-                                { enableHighAccuracy: true, timeout: 10000 },
-                              );
-                            }}
-                          >
-                            <LocateFixed className="mr-1.5 h-4 w-4" />
-                            Use my location
-                          </Button>
-                        </div>
-                        <div className="overflow-hidden rounded-lg border bg-muted">
+                        <p className="text-sm font-medium">Delivery pin</p>
+                        <p className="text-xs text-muted-foreground">Tap the map or drag the pin to your address.</p>
+                        <div className="relative z-0 overflow-hidden rounded-lg border bg-muted">
                           <DeliveryPinMap
                             store={{ lat: STORE_LAT, lng: STORE_LNG }}
-                            focus={selectedDeliveryArea || { lat: STORE_LAT, lng: STORE_LNG }}
-                            pin={deliveryHasLocation ? { lat: customerLat!, lng: customerLng! } : null}
+                            focus={mapFocus}
+                            pin={deliveryPin}
                             radiusKm={deliveryRadiusKm}
-                            onPick={({ lat, lng }) => {
-                              setDeliveryStatus("checking");
-                              setCustomerLat(lat);
-                              setCustomerLng(lng);
-                            }}
+                            onPick={pickLocation}
                           />
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-start gap-2">
-                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                          <span>
-                            Delivery starts from {STORE_ADDRESS}. {deliveryRadiusKm} km straight-line radius.
-                          </span>
+                        <div aria-live="polite" className="text-sm">
+                          {deliveryStatus === "checking" && <p className="text-muted-foreground">Checking delivery area...</p>}
+                          {deliveryStatus === "ok" && <p className="text-green-700">This pin is within our delivery zone{deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km from the store)` : ""}.</p>}
+                          {deliveryStatus === "outside" && <p className="text-destructive">Outside the {deliveryRadiusKm} km delivery zone{deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km from the store)` : ""}. Adjust your pin or choose Pickup.</p>}
+                          {deliveryStatus === "error" && deliveryPin && (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-destructive">We couldn't verify this location.</p>
+                              <Button type="button" variant="outline" size="sm" onClick={() => pickLocation({ ...deliveryPin })}>Retry check</Button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      {deliveryHasLocation && (
-                        <a
-                          href={deliveryDirectionsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex text-xs font-medium text-primary hover:underline"
-                        >
-                          View route from store in Google Maps
-                        </a>
-                      )}
-                      {deliveryStatus === "checking" && (
-                        <div className="flex items-center text-sm text-muted-foreground mt-1">
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Checking delivery area...
-                        </div>
-                      )}
-                      {deliveryStatus === "ok" && (
-                        <div className="flex items-center text-sm text-green-600 mt-1 font-medium">
-                          We deliver to your area
-                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km straight-line from store)` : ""}
-                        </div>
-                      )}
-                      {deliveryStatus === "outside" && (
-                        <div className="flex items-center text-sm text-red-600 mt-1 font-medium">
-                          Outside delivery zone
-                          {deliveryDistanceKm !== null ? ` (${deliveryDistanceKm} km straight-line from store)` : ""}.
-                          Delivery is available within {deliveryRadiusKm} km only.
-                        </div>
-                      )}
-                      {deliveryStatus === "ok" && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <Label htmlFor="houseNumber">House / Building No. *</Label>
-                            <Input
-                              id="houseNumber"
-                              placeholder="e.g. 75"
-                              value={houseNumber}
-                              onChange={(e) => setHouseNumber(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="streetNumber">Street / Block *</Label>
-                            <Input
-                              id="streetNumber"
-                              placeholder="e.g. CCA, DD Block"
-                              value={streetNumber}
-                              onChange={(e) => setStreetNumber(e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-                      {deliveryDetailsMissing && (
-                        <p className="text-xs font-medium text-amber-600">
-                          Add your house/building and street/block details to continue.
-                        </p>
-                      )}
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="deliveryAddress">House, street and block *</Label>
+                        <Input
+                          id="deliveryAddress"
+                          placeholder="e.g. House 75, Street 4, DD Block"
+                          autoComplete="street-address"
+                          value={deliveryAddress}
+                          onChange={(e) => setDeliveryAddress(e.target.value)}
+                          required
+                        />
+                      </div>
                     </div>
                   )}
 
-                  {branches.length > 0 && (
-                    <div className="space-y-1.5">
-                      <Label>
-                        Branch
-                        {orderType === "pickup" && (
-                          <span className="ml-1 text-destructive">*</span>
-                        )}
-                      </Label>
-                      <Select
-                        value={branchId?.toString() || ""}
-                        onValueChange={(v) => setBranchId(parseInt(v))}
-                      >
-                        <SelectTrigger
-                          className={(
-                            orderType === "pickup" && !branchId
-                              ? "border-destructive/50 focus:ring-destructive/30"
-                              : ""
-                          )}
-                        >
-                          <SelectValue
-                            placeholder={
-                              orderType === "pickup"
-                                ? "Select pickup branch *"
-                                : "Select branch (optional)"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {branches.map((b) => (
-                            <SelectItem key={b.id} value={b.id.toString()}>
-                              {b.name} — {b.city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {orderType === "pickup" && !branchId && (
-                        <p className="text-xs text-destructive">
-                          Please select a branch to pick up your order from.
-                        </p>
-                      )}
+                  {orderType === "pickup" && (
+                    <div className="space-y-1.5" id="pickupBranch" tabIndex={-1}>
+                      {branches.length > 1 ? (
+                        <>
+                          <Label htmlFor="pickup-branch-select">Pickup branch</Label>
+                          <Select value={pickupBranch?.id.toString() || ""} onValueChange={(value) => setBranchId(Number(value))}>
+                            <SelectTrigger id="pickup-branch-select">
+                              <SelectValue placeholder="Choose a pickup branch" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {branches.map((branch) => (
+                                <SelectItem key={branch.id} value={branch.id.toString()}>
+                                  {branch.name} - {branch.city}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      ) : pickupBranch ? (
+                        <p className="text-sm text-muted-foreground">Pickup from {pickupBranch.name}.</p>
+                      ) : null}
                     </div>
                   )}
                 </CardContent>
@@ -767,6 +737,7 @@ export default function CheckoutPage() {
 
               {/* Points Redemption */}
               {user &&
+                rewardSettings?.rewardsEnabled !== false &&
                 rewardSettings?.mode === "points" &&
                 userPoints >= rewardSettings.minRedeem && (
                   <Card>
@@ -905,7 +876,7 @@ export default function CheckoutPage() {
                   type="submit"
                   className="w-full"
                   size="lg"
-                  disabled={isSubmitting || !orderingStatus.open || deliveryBlocked}
+                  disabled={isSubmitting || !orderingStatus.open}
                 >
                   {isSubmitting ? (
                     <>
@@ -916,6 +887,7 @@ export default function CheckoutPage() {
                     "Place Order"
                   )}
                 </Button>
+                {submitError && <p role="alert" className="text-sm text-destructive">{submitError}</p>}
 
                 <p className="text-center text-xs text-muted-foreground">
                   By placing your order you agree to our{" "}

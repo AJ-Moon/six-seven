@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -53,10 +53,19 @@ type Order = {
   orderType: string;
 };
 
+function fetchTrackedOrder(order_id: string, phone: string) {
+  return fetch("/api/orders/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order_id, phone }),
+  });
+}
+
 export default function TrackPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { state } = useLocation();
   const initialOrderId = searchParams.get("order_id") || "";
-  const initialPhone = searchParams.get("phone") || "";
+  const initialPhone = state?.trackPhone || searchParams.get("phone") || "";
 
   const [orderNumber, setOrderNumber] = useState(initialOrderId);
   const [phone, setPhone] = useState(initialPhone);
@@ -71,8 +80,7 @@ export default function TrackPage() {
 
   const pollOrder = async (id: string, ph: string) => {
     try {
-      const params = new URLSearchParams({ order_id: id, phone: ph });
-      const res = await fetch(`/api/orders/track?${params}`);
+      const res = await fetchTrackedOrder(id, ph);
       if (!res.ok) return;
       const data: Order = await res.json();
       setOrder(data);
@@ -111,11 +119,7 @@ export default function TrackPage() {
       return;
     }
     try {
-      const params = new URLSearchParams({
-        order_id: id.trim(),
-        phone: ph.trim(),
-      });
-      const res = await fetch(`/api/orders/track?${params}`);
+      const res = await fetchTrackedOrder(id.trim(), ph.trim());
       if (!res.ok) {
         setError(
           res.status === 404
@@ -134,6 +138,11 @@ export default function TrackPage() {
   };
 
   useEffect(() => {
+    if (searchParams.has("phone")) {
+      const clean = new URLSearchParams(searchParams);
+      clean.delete("phone");
+      setSearchParams(clean, { replace: true });
+    }
     if (initialOrderId && initialPhone) {
       doFetchOrder(initialOrderId, initialPhone);
     }

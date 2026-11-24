@@ -13,6 +13,8 @@ export const ORDER_HOURS_SCHEMA = [
 ];
 
 const KARACHI_TIMEZONE = "Asia/Karachi";
+export const DEFAULT_CLOSED_MESSAGE =
+  "We're closed right now. Online ordering opens Mon-Thu at 12 PM and Fri-Sun at 5 PM (Pakistan time).";
 const WEEKDAY_INDEX: Record<string, number> = {
   Sun: 0,
   Mon: 1,
@@ -51,13 +53,22 @@ export function isOrderingOpen(date = new Date()) {
   return minutes >= openingMinute;
 }
 
-export function getOrderingStatus(date = new Date()) {
-  const open = isOrderingOpen(date);
+export function getOrderingStatus(
+  date = new Date(),
+  restaurantOpen = true,
+  closedMessage = DEFAULT_CLOSED_MESSAGE,
+) {
+  const open = restaurantOpen && isOrderingOpen(date);
+  const { day } = karachiParts(date);
+  const nextOpening = restaurantOpen && !open
+    ? `Online orders open today at ${[0, 5, 6].includes(day) ? "5 PM" : "12 PM"}`
+    : null;
   return {
     open,
     label: open ? "Open for orders" : "Ordering closed",
     message: open
       ? "Online ordering is available right now."
-      : "Online ordering is closed right now. Please order during store hours.",
+      : nextOpening || closedMessage || DEFAULT_CLOSED_MESSAGE,
+    note: nextOpening && closedMessage !== DEFAULT_CLOSED_MESSAGE ? closedMessage : null,
   };
 }
