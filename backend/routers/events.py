@@ -1,6 +1,8 @@
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -29,6 +31,8 @@ class EventInput(BaseModel):
     content: Optional[str] = Field(default=None, max_length=240)
     term: Optional[str] = Field(default=None, max_length=240)
     clickId: Optional[str] = Field(default=None, max_length=240)
+    metaClick: Optional[dict[str, Any]] = None
+    metaMatch: Optional[dict[str, Any]] = None
     itemId: Optional[int] = None
     categoryId: Optional[str] = Field(default=None, max_length=100)
     cartId: Optional[str] = Field(default=None, max_length=100)
@@ -141,6 +145,29 @@ def _client_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
 
 
+def _meta_fbc(click: Optional[dict[str, Any]], cookie: Optional[str], event_ms: int) -> Optional[str]:
+    click = click or {}
+    fbclid, captured = click.get("id"), click.get("capturedAt")
+    if (isinstance(fbclid, str) and re.fullmatch(r"[a-zA-Z0-9_-]{1,500}", fbclid)
+        and type(captured) is int and 0 < captured <= event_ms + 60_000):
+        if cookie and re.fullmatch(r"fb\.\d+\.\d{13}\." + re.escape(fbclid), cookie):
+            return cookie
+        return f"fb.1.{captured}.{fbclid}"
+    if cookie and re.fullmatch(r"fb\.\d+\.\d{13}\.[a-zA-Z0-9_-]{1,500}", cookie):
+        return cookie
+    return None
+
+
+def _path_only(value: Optional[str], *, absolute: bool = False) -> Optional[str]:
+    try:
+        url = urlsplit(value or "")
+    except ValueError:
+        return None
+    if absolute:
+        return urlunsplit((url.scheme, url.netloc, url.path, "", "")) if url.scheme in {"http", "https"} and url.hostname and not url.username else None
+    return url.path if url.path.startswith("/") else None
+
+
 def _enqueue_meta_capi(cursor, tenant_id: int, event: EventInput, request: Request) -> None:
     """Queue a server-side twin of this event for Meta's Conversions API.
 
@@ -150,11 +177,29 @@ def _enqueue_meta_capi(cursor, tenant_id: int, event: EventInput, request: Reque
     """
     if not should_forward_to_meta(event.eventName, event.properties):
         return
-    # fbc is the click identifier Meta expects, rebuilt from the fbclid it put
-    # on the ad's landing URL.
-    fbc = None
-    if event.clickId:
-        fbc = f"fb.1.{int(event.occurredAt.timestamp() * 1000)}.{event.clickId}"
+    metadata_properties = dict(event.properties)
+    if event.eventName == "checkout_step_completed":
+        cursor.execute(
+            """SELECT subtotal_cents, discount_cents, currency FROM orders
+               WHERE restaurant_id = %s AND id = %s AND cart_id = %s AND session_id = %s""",
+            (tenant_id, event.orderId, event.cartId, event.sessionId),
+        )
+        order = cursor.fetchone()
+        if not order:
+            return
+        subtotal, discount, currency = order
+        metadata_properties.update(foodValue=max(0, (subtotal or 0) - (discount or 0)) / 100, currency=currency)
+    meta_match = {}
+    if event.consentState == "analytics_granted" and event.eventName in {"checkout_ad_initiated", "checkout_step_completed"}:
+        meta_match = {
+            key: value for key, value in (event.metaMatch or {}).items()
+            if key in {"em", "ph"} and isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value)
+        }
+    fbc = _meta_fbc(event.metaClick, request.cookies.get("_fbc"), int(event.occurredAt.timestamp() * 1000))
+    referer = _path_only(request.headers.get("referer"), absolute=True)
+    if referer and (path := _path_only(event.pagePath)):
+        origin = urlsplit(referer)
+        referer = urlunsplit((origin.scheme, origin.netloc, path, "", ""))
     enqueue_job(
         cursor,
         tenant_id=tenant_id,
@@ -164,12 +209,11 @@ def _enqueue_meta_capi(cursor, tenant_id: int, event: EventInput, request: Reque
             "eventId": event.eventId,
             "eventName": event.eventName,
             "eventTime": int(event.occurredAt.timestamp()),
-            # Meta wants an absolute URL; the Referer on this POST is the page
-            # the customer was on, query string and UTMs included.
-            "eventSourceUrl": (request.headers.get("referer") or "")[:2000] or None,
+            "eventSourceUrl": referer,
             "itemId": event.itemId,
             "orderId": event.orderId,
-            "properties": event.properties,
+            "properties": metadata_properties,
+            "metaMatch": meta_match,
             "clientIp": _client_ip(request),
             "userAgent": request.headers.get("user-agent", "")[:500] or None,
             "fbc": fbc,
@@ -210,8 +254,8 @@ def ingest_event_batch(
                         event_name=event.eventName,
                         occurred_at=event.occurredAt,
                         location_id=event.locationId,
-                        page_path=event.pagePath,
-                        referrer=event.referrer,
+                        page_path=_path_only(event.pagePath),
+                        referrer=_path_only(event.referrer, absolute=True),
                         source=event.source,
                         medium=event.medium,
                         campaign=event.campaign,

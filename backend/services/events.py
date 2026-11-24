@@ -7,7 +7,7 @@ CLIENT_EVENT_NAMES = {
     "page_viewed", "menu_viewed", "category_impression", "category_viewed",
     "item_impression", "item_viewed", "modifier_group_viewed", "modifier_selected",
     "item_added_to_cart", "item_removed_from_cart", "cart_viewed", "cart_value_changed",
-    "checkout_started", "checkout_step_viewed", "checkout_step_completed",
+    "checkout_started", "checkout_contact_ready", "checkout_ad_initiated", "checkout_step_viewed", "checkout_step_completed",
     "delivery_area_checked", "delivery_fee_shown", "minimum_order_blocked",
     "payment_method_selected", "payment_started", "payment_failed", "search_performed",
     "search_result_clicked", "promotion_impression", "promotion_clicked", "chat_opened",

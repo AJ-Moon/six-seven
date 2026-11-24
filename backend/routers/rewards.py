@@ -26,7 +26,7 @@ def _get_rewards_program_settings(cur, restaurant_id: int):
         SELECT key, value
         FROM settings
         WHERE restaurant_id = %s
-          AND key IN ('points_per_dollar', 'min_redeem_points', 'points_value_cents', 'rewards_enabled')
+          AND key IN ('points_per_dollar', 'min_redeem_points', 'points_value_cents', 'rewards_enabled', 'max_points_discount_percent')
         """,
         (restaurant_id,),
     )
@@ -42,6 +42,7 @@ def _get_rewards_program_settings(cur, restaurant_id: int):
         "min_redeem_points": min_redeem_points,
         "points_value_cents": points_value_cents,
         "rewards_enabled": rewards_enabled,
+        "max_points_discount_percent": max(0, _safe_int(raw.get("max_points_discount_percent"), 20)),
     }
 
 
@@ -59,6 +60,7 @@ def get_reward_settings_public(restaurant_id: int = Depends(get_restaurant_id)):
         "pointsPerDollar": cfg["points_per_dollar"],
         "pointsValueCents": cfg["points_value_cents"],
         "rewardsEnabled": cfg["rewards_enabled"],
+        "maxDiscountPercent": cfg["max_points_discount_percent"],
     }
 
 

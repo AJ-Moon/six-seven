@@ -14,6 +14,7 @@ token is configured in the environment.
 import hashlib
 import logging
 import os
+import re
 from typing import Any, Optional
 
 import httpx
@@ -36,6 +37,10 @@ def is_enabled() -> bool:
 
 
 def should_forward(event_name: str, properties: dict[str, Any]) -> bool:
+    if event_name == "checkout_ad_initiated":
+        return True
+    if event_name == "checkout_started" and properties.get("firstPartyOnly") is True:
+        return False
     if event_name not in EVENT_NAME_MAP:
         return False
     if event_name == "checkout_step_completed":
@@ -63,10 +68,13 @@ def _build_user_data(metadata: dict[str, Any]) -> dict[str, Any]:
         user_data["fbc"] = fbc
     if fbp := metadata.get("fbp"):
         user_data["fbp"] = fbp
-    if email := _hashed(metadata.get("email")):
-        user_data["em"] = email
-    if phone := _hashed(metadata.get("phone")):
-        user_data["ph"] = phone
+    match = metadata.get("metaMatch") or {}
+    for key, legacy_field in (("em", "email"), ("ph", "phone")):
+        value = match.get(key)
+        if isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value):
+            user_data[key] = value
+        elif key == "em" and (value := _hashed(metadata.get(legacy_field))):
+            user_data[key] = value
     return user_data
 
 
@@ -92,11 +100,11 @@ def build_payload(metadata: dict[str, Any]) -> Optional[dict[str, Any]]:
             custom_data["content_type"] = "product"
         if name := properties.get("name"):
             custom_data["content_name"] = name
-    elif event_name == "checkout_started":
-        custom_data["value"] = properties.get("displayedTotal")
+    elif event_name in {"checkout_started", "checkout_ad_initiated"}:
+        custom_data["value"] = properties.get("foodValue", properties.get("displayedTotal"))
         custom_data["num_items"] = properties.get("itemCount")
     else:  # Purchase
-        custom_data["value"] = properties.get("total")
+        custom_data["value"] = properties.get("foodValue", properties.get("total"))
         if order_id := metadata.get("orderId"):
             custom_data["order_id"] = str(order_id)
 
@@ -104,7 +112,7 @@ def build_payload(metadata: dict[str, Any]) -> Optional[dict[str, Any]]:
         return None
 
     event: dict[str, Any] = {
-        "event_name": EVENT_NAME_MAP[event_name],
+        "event_name": "InitiateCheckout" if event_name == "checkout_ad_initiated" else EVENT_NAME_MAP[event_name],
         "event_time": metadata["eventTime"],
         "event_id": metadata["eventId"],
         "action_source": "website",

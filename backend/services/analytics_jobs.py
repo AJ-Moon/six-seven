@@ -127,16 +127,16 @@ def aggregate_daily(cursor, tenant_id: int, metadata: dict[str, Any]) -> None:
             delivery_area_rejections, minimum_order_blocks, coupon_failures, mobile_entered, mobile_completed)
            SELECT %s, %s, COALESCE(properties->>'step', 'CHECKOUT'),
                   count(*) FILTER (WHERE event_name IN ('checkout_started','checkout_step_viewed','payment_started')),
-                  count(*) FILTER (WHERE event_name IN ('checkout_step_completed','order_created')),
+                  count(*) FILTER (WHERE event_name IN ('checkout_contact_ready','checkout_step_completed','order_created')),
                   count(*) FILTER (WHERE event_name = 'payment_failed'),
                   count(*) FILTER (WHERE event_name = 'delivery_area_checked' AND COALESCE((properties->>'available')::boolean, false) = false),
                   count(*) FILTER (WHERE event_name = 'minimum_order_blocked'),
                   count(*) FILTER (WHERE properties->>'failureType' = 'coupon'),
                   count(*) FILTER (WHERE properties->>'deviceClass' = 'mobile' AND event_name IN ('checkout_started','checkout_step_viewed','payment_started')),
-                  count(*) FILTER (WHERE properties->>'deviceClass' = 'mobile' AND event_name IN ('checkout_step_completed','order_created'))
+                  count(*) FILTER (WHERE properties->>'deviceClass' = 'mobile' AND event_name IN ('checkout_contact_ready','checkout_step_completed','order_created'))
            FROM analytics_events
            WHERE tenant_id = %s AND occurred_at::date = %s
-             AND event_name IN ('checkout_started','checkout_step_viewed','checkout_step_completed','delivery_area_checked','minimum_order_blocked','payment_started','payment_failed','order_created')
+             AND event_name IN ('checkout_started','checkout_contact_ready','checkout_step_viewed','checkout_step_completed','delivery_area_checked','minimum_order_blocked','payment_started','payment_failed','order_created')
            GROUP BY COALESCE(properties->>'step', 'CHECKOUT')""",
         (tenant_id, metric_date, tenant_id, metric_date),
     )

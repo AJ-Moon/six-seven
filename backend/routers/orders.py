@@ -424,6 +424,16 @@ def get_order_history(current_user: TokenData = Depends(get_current_user)):
     return [_row_to_order(r) for r in rows]
 
 
+class TrackOrderRequest(BaseModel):
+    order_id: str = Field(min_length=1, max_length=20)
+    phone: str = Field(min_length=1, max_length=64)
+
+
+@router.post("/track")
+def track_order_body(body: TrackOrderRequest, restaurant_id: int = Depends(get_restaurant_id)):
+    return track_order_public(body.order_id, body.phone, restaurant_id)
+
+
 @router.get("/track")
 def track_order_public(
     order_id: str,

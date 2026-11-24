@@ -1,5 +1,9 @@
-import os
+from datetime import datetime, timezone
+from unittest.mock import Mock, patch
 
+from starlette.requests import Request
+
+from routers.events import EventInput, _enqueue_meta_capi, _meta_fbc, _path_only
 from services.meta_capi import EVENT_NAME_MAP, build_payload, is_enabled, should_forward
 
 
@@ -107,3 +111,48 @@ def test_disabled_without_credentials(monkeypatch):
 
 def test_event_map_matches_browser_pixel_names():
     assert set(EVENT_NAME_MAP.values()) == {"AddToCart", "InitiateCheckout", "Purchase"}
+
+
+def test_checkout_contact_is_forwarded_separately_from_checkout_entry():
+    assert not should_forward("checkout_started", {"firstPartyOnly": True})
+    assert not should_forward("checkout_contact_ready", {})
+    payload = build_payload({
+        **BASE, "eventName": "checkout_ad_initiated",
+        "properties": {"foodValue": 620.50, "itemCount": 1, "currency": "PKR"},
+        "metaMatch": {"ph": "a" * 64, "em": "b" * 64},
+    })
+    event = payload["data"][0]
+    assert event["event_name"] == "InitiateCheckout"
+    assert event["user_data"]["ph"] == "a" * 64
+    assert event["user_data"]["em"] == "b" * 64
+    assert event["custom_data"]["value"] == 620.50
+
+
+def test_queued_purchase_uses_saved_discounted_food_value_and_consent():
+    now = datetime.now(timezone.utc)
+    request = Request({"type": "http", "headers": [(b"referer", b"https://sixseven.pk/track?phone=redacted")]})
+    event = EventInput(
+        eventId="event-123", eventName="checkout_step_completed", occurredAt=now,
+        visitorId="visitor-123", sessionId="session-123", cartId="cart-123", orderId="FH-123456",
+        pagePath="/checkout?phone=redacted", properties={"step": "ORDER_CONFIRMED", "total": 770.5},
+        metaMatch={"ph": "a" * 64, "em": "not-a-hash"}, consentState="analytics_granted",
+    )
+    cursor = Mock()
+    cursor.fetchone.return_value = (62050, 1000, "PKR")
+    with patch("routers.events.enqueue_job") as enqueue:
+        _enqueue_meta_capi(cursor, 1, event, request)
+        metadata = enqueue.call_args.kwargs["metadata"]
+        assert metadata["metaMatch"] == {"ph": "a" * 64}
+        assert metadata["eventSourceUrl"] == "https://sixseven.pk/checkout"
+        payload = build_payload(metadata)["data"][0]
+        assert payload["custom_data"]["value"] == 610.50
+        assert payload["event_id"] == "event-123"
+        _enqueue_meta_capi(cursor, 1, event.model_copy(update={"consentState": "unknown"}), request)
+        assert enqueue.call_args.kwargs["metadata"]["metaMatch"] == {}
+
+
+def test_click_id_uses_landing_timestamp_and_path_strips_queries():
+    landing = 1795600000000
+    assert _meta_fbc({"id": "Abc", "capturedAt": landing}, None, landing + 5000) == f"fb.1.{landing}.Abc"
+    assert _meta_fbc(None, "invalid", landing) is None
+    assert _path_only("/menu?category=Deals") == "/menu"

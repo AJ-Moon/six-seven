@@ -563,12 +563,10 @@ OR when customer says YES to the order summary:
                                 "total": cents_to_float(total_cents),
                             }
                             
-                            track_phone = guest_phone or guest_info.get("phone") or ""
-                            
                             ai_reply = (
                                 f"🎉 Your order **#{order_id}** has been placed! "
                                 f"Total: ${cents_to_float(total_cents):.2f}. "
-                                f"You can track it [here](/track?order_id={order_id}&phone={track_phone}). Thank you!"
+                                f"You can track it [here](/track?order_id={order_id}). Thank you!"
                             )
 
                 except ValueError as exc:
