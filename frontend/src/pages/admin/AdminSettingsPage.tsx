@@ -153,6 +153,7 @@ function StoreSettingsTab() {
   const [restaurantLat, setRestaurantLat] = useState("");
   const [restaurantLng, setRestaurantLng] = useState("");
   const [globalDiscountPercent, setGlobalDiscountPercent] = useState("0");
+  const [globalDiscountEndsAt, setGlobalDiscountEndsAt] = useState("");
   const [globalDiscountExcludedCategories, setGlobalDiscountExcludedCategories] =
     useState("Deals, Combo Meal");
   const [loading, setLoading] = useState(true);
@@ -184,6 +185,10 @@ function StoreSettingsTab() {
         setRestaurantLat(d.restaurant_lat ?? "");
         setRestaurantLng(d.restaurant_lng ?? "");
         setGlobalDiscountPercent(d.global_discount_percent ?? "0");
+        const discountEnd = Date.parse(d.global_discount_ends_at || "");
+        setGlobalDiscountEndsAt(
+          Number.isFinite(discountEnd) ? new Date(discountEnd + 5 * 3600_000).toISOString().slice(0, 16) : "",
+        );
         setGlobalDiscountExcludedCategories(
           d.global_discount_excluded_categories ?? "Deals, Combo Meal",
         );
@@ -241,6 +246,7 @@ function StoreSettingsTab() {
             ),
           ),
         ),
+        global_discount_ends_at: globalDiscountEndsAt ? `${globalDiscountEndsAt}:00+05:00` : "",
         global_discount_excluded_categories: globalDiscountExcludedCategories
           .split(",")
           .map((category) => category.trim())
@@ -388,6 +394,16 @@ function StoreSettingsTab() {
           <p className="text-xs text-muted-foreground">
             Applies to all available menu items unless their category is excluded below.
           </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="global-discount-end">Discount ends (Pakistan time)</Label>
+          <Input
+            id="global-discount-end"
+            type="datetime-local"
+            value={globalDiscountEndsAt}
+            onChange={(e) => setGlobalDiscountEndsAt(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">Leave blank for no scheduled expiry.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="global-discount-exclusions">Excluded categories</Label>

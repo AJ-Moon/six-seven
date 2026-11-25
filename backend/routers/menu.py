@@ -120,7 +120,7 @@ def get_menu(
             global_discount = load_global_discount_config(cur, restaurant_id)
             cur.execute(query, params)
             rows = cur.fetchall()
-    response.headers["Cache-Control"] = "public, max-age=300"
+    response.headers["Cache-Control"] = "no-cache"
     return [_row_to_item(r, global_discount) for r in rows]
 
 

@@ -130,7 +130,7 @@ function distanceFromStore({ lat, lng }: DeliveryArea) {
 }
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, clearCart, updatePrices } = useCart();
   const { user, token } = useAuth();
   const { deliveryCharge, minOrderAmount, currencySymbol, cashOnDelivery, restaurantOpen, closedMessage } = useRestaurant();
   const orderingStatus = useOrderingStatus();
@@ -362,6 +362,7 @@ export default function CheckoutPage() {
         branchId: orderType === "pickup" ? pickupBranch?.id : undefined,
         notes: notes.trim(),
         pointsToRedeem,
+        expectedSubtotalCents: Math.round(total * 100),
         customerLat: orderType === "delivery" ? deliveryPin?.lat : undefined,
         customerLng: orderType === "delivery" ? deliveryPin?.lng : undefined,
         cartId: getCartId(),
@@ -389,6 +390,10 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 409 && err.detail?.code === "cart_prices_changed" && Array.isArray(err.detail.prices)) {
+          updatePrices(items, err.detail.prices);
+          throw new Error("Menu prices changed. Review your updated total and place your order again.");
+        }
         throw new Error(typeof err.detail === "string"
           ? err.detail
           : res.status >= 500

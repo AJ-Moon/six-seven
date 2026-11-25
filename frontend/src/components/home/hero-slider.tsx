@@ -16,7 +16,7 @@ const SIX_SEVEN_PROMO_SLIDES = [
   {
     id: 1,
     headline: "The Best Beef Burgers in Town",
-    subheadline: "Australian beef burgers with 15% off on website and dine-in.",
+    subheadline: "Australian beef, stacked fresh to order.",
     image: "/images/six-seven-home-slide-beef-burgers.png",
   },
   {
@@ -138,7 +138,7 @@ export function HeroSlider() {
       className={cn(
         "relative w-full overflow-hidden",
         artworkLayout
-          ? "aspect-[12/5] min-h-[180px] max-h-[800px] bg-[#003235] sm:min-h-[300px] lg:min-h-[520px]"
+          ? "aspect-[12/5] min-h-[215px] max-h-[680px] bg-[#04272e] sm:min-h-[300px] lg:min-h-[400px] lg:max-h-[min(680px,calc(100svh_-_250px))]"
           : layout === "modern"
           ? "h-[420px] sm:h-[560px] lg:h-[680px]"
           : "h-[380px] sm:h-[500px] lg:h-[620px]",
@@ -150,6 +150,7 @@ export function HeroSlider() {
       {sliderSlides.map((slide, index) => (
         <div
           key={slide.id}
+          aria-hidden={index !== current}
           className={cn(
             "absolute inset-0 transition-opacity duration-700",
             index === current ? "opacity-100" : "pointer-events-none opacity-0",
@@ -158,16 +159,34 @@ export function HeroSlider() {
           {isPromoArtworkSlide(slide.image) ? (
             <Link
               to="/menu"
+              tabIndex={index === current ? undefined : -1}
               aria-label={`${slide.headline}. Order now.`}
               className="absolute inset-0 block"
             >
-              <img
-                src={slide.image}
-                alt={slide.headline}
-                className="h-full w-full object-contain md:object-cover"
-                decoding="async"
-                fetchPriority={index === 0 ? "high" : "auto"}
-              />
+              {/* The left side of these legacy posters contains expired offer copy. */}
+              <div className="absolute inset-y-0 right-0 w-[70%] overflow-hidden sm:w-[65%]">
+                <img
+                  src={slide.image}
+                  alt=""
+                  className="absolute inset-y-0 right-0 h-full w-[154%] max-w-none object-cover object-right"
+                  decoding="async"
+                  fetchPriority={index === 0 ? "high" : "auto"}
+                />
+                <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-[#04272e] to-transparent" />
+              </div>
+              {index === current && (
+                <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-center px-4 sm:px-6 lg:px-8">
+                  <div className="w-[46%] space-y-3 sm:w-[38%] lg:space-y-5">
+                    <h1 className="break-words font-serif text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-6xl">
+                      {slide.headline}
+                    </h1>
+                    <p className="hidden text-base text-white/85 sm:block lg:text-lg">{slide.subheadline}</p>
+                    <span className="inline-flex items-center rounded-md bg-[#ffca32] px-3 py-2 text-sm font-bold text-[#04272e]">
+                      Explore Menu
+                    </span>
+                  </div>
+                </div>
+              )}
             </Link>
           ) : (
             <>
@@ -221,7 +240,7 @@ export function HeroSlider() {
                       style={{ backgroundColor: primaryColor }}
                       asChild
                     >
-                      <Link to="/menu">Order Now</Link>
+                      <Link to="/menu" tabIndex={index === current ? undefined : -1}>Order Now</Link>
                     </Button>
                     <Button
                       size="lg"
@@ -229,7 +248,7 @@ export function HeroSlider() {
                       className="six7-press h-11 border-white/35 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20 hover:text-white sm:h-12 sm:px-8 sm:text-base"
                       asChild
                     >
-                      <Link to="/menu">Explore Menu</Link>
+                      <Link to="/menu" tabIndex={index === current ? undefined : -1}>Explore Menu</Link>
                     </Button>
                   </div>
                 </div>

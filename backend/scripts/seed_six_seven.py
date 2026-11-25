@@ -256,7 +256,7 @@ def deal_coffee_groups(count: int) -> list[dict]:
 DEAL_MENU = [
     menu_item(
         "Deals", "Burgers", "The Solo Feast", 1349,
-        "Choose any double-patty beef or chicken burger, plus plain fries and a 350ml Coke or Sprite. Choose two sauces with chicken burgers. Fixed deal price; no additional 15% discount.",
+        "Choose any double-patty beef or chicken burger, plus plain fries and a 350ml Coke or Sprite. Choose two sauces with chicken burgers. Fixed deal price; menu-wide discounts do not apply.",
         "/images/deals/solo-feast.png", featured=True,
         customizations=deal_burger_groups(1, DOUBLE_BURGER_CHOICES) + [
             group("drink", "350ml drink", [option("coke", "Coke"), option("sprite", "Sprite")], required=True),
@@ -264,7 +264,7 @@ DEAL_MENU = [
     ),
     menu_item(
         "Deals", "Sharing", "The Family Feast", 3999,
-        "Choose four single-patty beef or chicken burgers or chicken wraps. Includes four Golden Tenders with two sauce dips, one plain fries, one curly fries, a 1.5L Coke or Sprite, and one free chocolate-drip waffle or mini pancakes. Fixed deal price; no additional 15% discount.",
+        "Choose four single-patty beef or chicken burgers or chicken wraps. Includes four Golden Tenders with two sauce dips, one plain fries, one curly fries, a 1.5L Coke or Sprite, and one free chocolate-drip waffle or mini pancakes. Fixed deal price; menu-wide discounts do not apply.",
         "/images/deals/family-feast.png", featured=True,
         customizations=deal_burger_groups(4, SINGLE_BURGER_WRAP_CHOICES) + [
             group("tender-sauces", "Choose 2 tender sauces", SAUCE_OPTIONS, required=True, min_selections=2, max_selections=2, allow_repeats=True),
@@ -274,7 +274,7 @@ DEAL_MENU = [
     ),
     menu_item(
         "Deals", "Sharing", "Double Trouble", 1699,
-        "Choose two single-patty beef or chicken burgers or chicken wraps. Includes one plain fries and a 1L Coke or Sprite. Choose two sauces with chicken burgers or wraps. Fixed deal price; no additional 15% discount.",
+        "Choose two single-patty beef or chicken burgers or chicken wraps. Includes one plain fries and a 1L Coke or Sprite. Choose two sauces with chicken burgers or wraps. Fixed deal price; menu-wide discounts do not apply.",
         "/images/deals/double-trouble.png", featured=True,
         customizations=deal_burger_groups(2, SINGLE_BURGER_WRAP_CHOICES) + [
             group("drink", "1L drink", [option("coke", "Coke"), option("sprite", "Sprite")], required=True),
@@ -282,7 +282,7 @@ DEAL_MENU = [
     ),
     menu_item(
         "Deals", "Coffee", "Coffee Lovers' Heaven", 1599,
-        "Choose any two hot or iced coffees and one chocolate-drip waffle or mini pancakes. Fixed deal price; no additional 15% discount.",
+        "Choose any two hot or iced coffees and one chocolate-drip waffle or mini pancakes. Fixed deal price; menu-wide discounts do not apply.",
         "/images/deals/coffee-lovers-heaven.png", featured=True,
         customizations=deal_coffee_groups(2) + [
             group("dessert", "Dessert", [option("waffle", "Chocolate Drip waffle"), option("mini-pancakes", "Chocolate Drip mini pancakes")], required=True),
@@ -290,7 +290,7 @@ DEAL_MENU = [
     ),
     menu_item(
         "Deals", "Coffee", "Coffee & Crunch Deal", 1099,
-        "Choose a Tikka or Fajita grilled sandwich on white or bran bread, plus any hot or iced coffee. Fixed deal price; no additional 15% discount.",
+        "Choose a Tikka or Fajita grilled sandwich on white or bran bread, plus any hot or iced coffee. Fixed deal price; menu-wide discounts do not apply.",
         "/images/deals/coffee-crunch-deal.png", featured=True,
         customizations=[
             group("sandwich", "Grilled sandwich", [option("tikka", "Tikka Grilled Sandwich"), option("fajita", "Fajita Grilled Sandwich")], required=True),
@@ -392,14 +392,13 @@ SETTINGS = {
     "announcement_active": "true",
     "maps_embed": "https://www.google.com/maps?q=31.4641372,74.3822137&z=16&output=embed",
     "cash_on_delivery": "true",
-    "global_discount_percent": "15",
     "menu_subtitle": "Mighty zingers, Australian beef burgers, tenders, loaded fries, wraps, salads, sweets and drinks — made fresh to order.",
     "footer_tagline": "Mighty burgers, crispy tenders, loaded fries, specialty coffee and cold drinks from DHA Phase 4 Lahore.",
     "closed_message": "We're closed right now. Online ordering opens Mon-Thu at 12 PM and Fri-Sun at 5 PM (Pakistan time).",
     "contact_reply_time": "We usually reply within a few hours",
     "contact_hours_note": "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)",
     "deals_section_title": "Featured Deals",
-    "deals_section_subtitle": "Burgers, sharing meals and coffee combos at fixed prices. The extra 15% menu discount does not apply.",
+    "deals_section_subtitle": "Burgers, sharing meals and coffee combos at fixed prices. Menu-wide discounts do not apply.",
     "featured_section_title": "Fresh From The New Menu",
     "featured_section_subtitle": "Mighty burgers, Australian beef stacks, crispy tenders and loaded fries.",
     "promo_headline": "Order Online, Your Way",
@@ -410,7 +409,7 @@ SETTINGS = {
             {
                 "image": "/images/six-seven-home-slide-beef-burgers.png",
                 "headline": "The Best Beef Burgers in Town",
-                "subtext": "Australian beef burgers with 15% off on website and dine-in.",
+                "subtext": "Australian beef, stacked fresh to order.",
             },
             {
                 "image": "/images/six-seven-home-slide-sandwiches-salads.png",

@@ -18,6 +18,7 @@ from dependencies.auth import get_restaurant_id
 from routers import auth, menu, orders, branches, rewards, contact, faqs, admin
 from routers import theme, chatbot, delivery, revenue_operator, events, carts
 from routers import analytics, competitors, opportunities, experiments, missions
+from services.commerce import effective_global_discount_percent
 
 load_dotenv()
 
@@ -108,7 +109,7 @@ def public_settings(restaurant_id: int = Depends(get_restaurant_id)):
         "delivery_charge", "min_order_amount", "restaurant_open",
         "announcement", "announcement_active", "maps_embed", "tagline", "brand_name",
         "currency", "currency_symbol", "delivery_radius_km", "cash_on_delivery",
-        "global_discount_percent", "global_discount_excluded_categories",
+        "global_discount_percent", "global_discount_excluded_categories", "global_discount_ends_at",
         # editable site copy — every one of these is surfaced by RestaurantContext,
         # so anything left out here silently falls back to the built-in default.
         "closed_message", "footer_tagline", "menu_subtitle",
@@ -125,6 +126,7 @@ def public_settings(restaurant_id: int = Depends(get_restaurant_id)):
             )
             rows = cur.fetchall()
     data = {r[0]: r[1] for r in rows if r[0] in PUBLIC_KEYS}
+    data["global_discount_percent"] = str(effective_global_discount_percent(data))
     defaults = {
         "brand_name": "Six Seven",
         "instagram_url": "https://instagram.com/sixseven.pk",

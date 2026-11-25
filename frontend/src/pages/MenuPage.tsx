@@ -33,6 +33,7 @@ import { srcSetFor } from "@/lib/images";
 import { MenuItemCustomizer } from "@/components/menu/menu-item-customizer";
 import ChatWidget from "@/components/ChatWidget";
 import { OrderingAvailability } from "@/components/ordering-availability";
+import { OfferCountdown } from "@/components/offer-countdown";
 import { useOrderingStatus } from "@/hooks/use-ordering-status";
 import { SITE_URL, setJsonLd, removeJsonLd } from "@/components/SeoMetadata";
 import type { PublicMenuItem, SelectedCustomization } from "@/types/menu";
@@ -262,6 +263,7 @@ export default function MenuPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="pb-20 md:pb-0">
+        <OfferCountdown />
         {/* Hero */}
         <section className="bg-accent py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 text-center lg:px-8">

@@ -1,6 +1,7 @@
 import json
 import secrets
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Iterable, Optional
 
 from fastapi import HTTPException
@@ -192,25 +193,38 @@ def _split_csv(value: str) -> set[str]:
     return {part.strip().lower() for part in str(value or "").split(",") if part.strip()}
 
 
+def parse_discount_end(value: str) -> datetime:
+    end = datetime.fromisoformat(value)
+    if end.utcoffset() is None:
+        raise ValueError("Discount end must include a time zone")
+    return end
+
+
+def effective_global_discount_percent(raw: dict, now: datetime | None = None) -> int:
+    try:
+        percent = int(float(raw.get("global_discount_percent", "0")))
+        end = raw.get("global_discount_ends_at")
+        if end and (now or datetime.now(timezone.utc)) >= parse_discount_end(end):
+            return 0
+    except (TypeError, ValueError, OverflowError):
+        return 0
+    return max(0, min(90, percent))
+
+
 def load_global_discount_config(cursor, tenant_id: int) -> tuple[int, set[str]]:
     cursor.execute(
         """
         SELECT key, value
         FROM settings
         WHERE restaurant_id = %s
-          AND key IN ('global_discount_percent', 'global_discount_excluded_categories')
+          AND key IN ('global_discount_percent', 'global_discount_excluded_categories', 'global_discount_ends_at')
         """,
         (tenant_id,),
     )
     raw = {str(key): str(value or "") for key, value in cursor.fetchall()}
-    try:
-        percent = int(float(raw.get("global_discount_percent", "0")))
-    except (TypeError, ValueError):
-        percent = 0
-    percent = max(0, min(90, percent))
     excluded = _split_csv(raw.get("global_discount_excluded_categories", "Deals, Combo Meal"))
     excluded.add("deals")
-    return percent, excluded
+    return effective_global_discount_percent(raw), excluded
 
 
 def effective_sale_price_cents(

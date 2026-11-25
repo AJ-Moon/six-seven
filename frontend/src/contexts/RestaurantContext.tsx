@@ -5,6 +5,7 @@ import {
   useState,
   ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { setCurrencySymbol } from "@/lib/money";
 
 export interface RestaurantTheme {
@@ -16,6 +17,8 @@ export interface RestaurantTheme {
   minOrderAmount: number;
   restaurantOpen: string;
   cashOnDelivery: boolean;
+  globalDiscountPercent: number;
+  globalDiscountEndsAt: string;
   announcement: string;
   announcementActive: string;
   heroText: string;
@@ -63,6 +66,8 @@ const DEFAULTS: RestaurantTheme = {
   minOrderAmount: 0,
   restaurantOpen: "true",
   cashOnDelivery: true,
+  globalDiscountPercent: 0,
+  globalDiscountEndsAt: "",
   announcement: "",
   announcementActive: "false",
   heroText: "",
@@ -84,7 +89,7 @@ const DEFAULTS: RestaurantTheme = {
     "Mon-Thu: 12 PM-1 AM next day; Fri-Sun: 5 PM-2 AM next day (Pakistan time)",
   dealsSectionTitle: "Featured Deals",
   dealsSectionSubtitle:
-    "Burgers, sharing meals and coffee combos at fixed prices. The extra 15% menu discount does not apply.",
+    "Burgers, sharing meals and coffee combos at fixed prices. Menu-wide discounts do not apply.",
   featuredSectionTitle: "Fan Favorites & New Arrivals",
   featuredSectionSubtitle:
     "Discover what everyone is ordering and try our latest creations",
@@ -144,6 +149,7 @@ function ThemeLoadingScreen() {
 const RestaurantContext = createContext<RestaurantTheme>(DEFAULTS);
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   // True immediately if we have a cached theme (returning user), false on cold start
   const [themeReady, setThemeReady] = useState(() => {
     try {
@@ -232,6 +238,8 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
               }))
             : [],
           // New fields from settings
+          globalDiscountPercent: Number(settingsData?.global_discount_percent) || 0,
+          globalDiscountEndsAt: settingsData?.global_discount_ends_at || "",
           currencySymbol:
             settingsData?.currency_symbol || DEFAULTS.currencySymbol,
           closedMessage: settingsData?.closed_message || DEFAULTS.closedMessage,
@@ -275,6 +283,31 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         fetch("/api/menu").catch(() => {});
       });
   }, []);
+
+  useEffect(() => {
+    if (!theme.globalDiscountPercent) return;
+    const end = Date.parse(theme.globalDiscountEndsAt);
+    if (!Number.isFinite(end)) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      clearTimeout(timer);
+      const remaining = end - Date.now();
+      if (remaining > 0) {
+        timer = setTimeout(expire, Math.min(remaining, 2_147_483_647));
+        return;
+      }
+      setTheme((current) => ({ ...current, globalDiscountPercent: 0 }));
+      void queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => typeof queryKey[0] === "string" && /^(menu$|menu-)/.test(queryKey[0]),
+      });
+    };
+    expire();
+    window.addEventListener("focus", expire);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", expire);
+    };
+  }, [theme.globalDiscountEndsAt, theme.globalDiscountPercent, queryClient]);
 
   useEffect(() => {
     // Only cache small scalar fields — exclude large image URLs and slide arrays
@@ -336,6 +369,7 @@ export async function fetchRestaurantTheme(
     if (!res.ok) return DEFAULTS;
     const data = await res.json();
     return {
+      ...DEFAULTS,
       restaurantName: data.restaurantName || DEFAULTS.restaurantName,
       logoUrl: data.logoUrl || "",
       primaryColor: data.primaryColor || DEFAULTS.primaryColor,

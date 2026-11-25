@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react"
 import { getCartId, getSessionId, getVisitorId, resetCartId, track } from "@/lib/analytics"
 import type { SelectedCustomization } from "@/types/menu"
+import { useRestaurant } from "@/contexts/RestaurantContext"
 
 export interface CartItem {
   lineId: string
@@ -18,6 +19,7 @@ interface CartContextType {
   removeItem: (lineId: string) => void
   updateQty: (lineId: string, qty: number) => void
   clearCart: () => void
+  updatePrices: (snapshot: CartItem[], prices: number[]) => void
   total: number
   count: number
 }
@@ -46,6 +48,7 @@ function normalizeStoredItems(rows: CartItem[]) {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { globalDiscountPercent } = useRestaurant()
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
       const stored = localStorage.getItem(CART_KEY)
@@ -76,14 +79,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }).catch(() => undefined)
   }, [])
 
+  const updatePrices = useCallback((snapshot: CartItem[], prices: number[]) => {
+    if (prices.length !== snapshot.length || !prices.every((price) => Number.isFinite(price) && price >= 0)) return
+    setItems((current) => current !== snapshot || current.every((item, i) => item.price === prices[i])
+      ? current
+      : current.map((item, i) => ({ ...item, price: prices[i] })))
+  }, [])
+
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(items))
     if (!items.length) return
-    const timer = window.setTimeout(() => {
-      void syncCart(items)
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await syncCart(items)
+        if (!response?.ok) return
+        const data = await response.json()
+        if (!cancelled && Array.isArray(data.items)) {
+          updatePrices(items, data.items.map((line: { price: number }) => line.price))
+        }
+      } catch {
+        // Checkout verifies the last displayed subtotal again before placing an order.
+      }
     }, 400)
-    return () => window.clearTimeout(timer)
-  }, [items, syncCart])
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [items, syncCart, updatePrices, globalDiscountPercent])
 
   const addItem = useCallback((item: Omit<CartItem, "quantity" | "lineId"> & { lineId?: string }, qty = 1) => {
     const lineId = item.lineId || buildLineId(item.menuItemId, item.customizations || [])
@@ -137,7 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const count = items.reduce((sum, i) => sum + i.quantity, 0)
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clearCart, total, count }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clearCart, updatePrices, total, count }}>
       {children}
     </CartContext.Provider>
   )

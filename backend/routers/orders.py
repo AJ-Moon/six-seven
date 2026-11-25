@@ -53,6 +53,7 @@ class CreateOrderRequest(BaseModel):
     branchId: Optional[int] = None
     notes: Optional[str] = ""
     pointsToRedeem: int = 0
+    expectedSubtotalCents: Optional[int] = Field(default=None, ge=0)
     customerLat: Optional[float] = Field(default=None, ge=-90, le=90, allow_inf_nan=False)
     customerLng: Optional[float] = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
     cartId: Optional[str] = None
@@ -216,6 +217,15 @@ def create_order(
                 raise HTTPException(status_code=409, detail="Restaurant is currently closed")
             if not _orders_open_now():
                 raise HTTPException(status_code=409, detail=ORDER_HOURS_DETAIL)
+
+            if body.expectedSubtotalCents is not None and subtotal_cents != body.expectedSubtotalCents:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "cart_prices_changed",
+                        "prices": [cents_to_float(line.net_unit_price_cents) for line in priced_lines],
+                    },
+                )
 
             minimum_order_cents = load_money_setting_cents(cur, restaurant_id, "min_order_amount")
             if subtotal_cents < minimum_order_cents:

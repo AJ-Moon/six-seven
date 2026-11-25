@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from db import get_db
 from dependencies.auth import get_current_admin, get_restaurant_id
 from services.audit import record_audit
+from services.commerce import parse_discount_end
 from services.events import emit_server_event
 from core.storage import uploads_dir
 from services.jobs import enqueue_job
@@ -1256,6 +1257,7 @@ class SettingsBody(BaseModel):
     restaurant_lat: Optional[str] = None
     restaurant_lng: Optional[str] = None
     global_discount_percent: Optional[str] = None
+    global_discount_ends_at: Optional[str] = None
     global_discount_excluded_categories: Optional[str] = None
 
 
@@ -1263,6 +1265,11 @@ class SettingsBody(BaseModel):
 def admin_update_settings(body: SettingsBody, admin: dict = Depends(get_current_admin)):
     rid = _restaurant_id(admin)
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    if end := updates.get("global_discount_ends_at"):
+        try:
+            updates["global_discount_ends_at"] = parse_discount_end(end).isoformat()
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
     with get_db() as conn:
         with conn.cursor() as cur:
             # executemany sends all upserts in a single round-trip instead of N
